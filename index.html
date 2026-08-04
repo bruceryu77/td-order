@@ -677,6 +677,7 @@
   <script src="products-data.js"></script>
   <script>
     const DRAFT_KEY = "td-order-draft-v1";
+    const LIVE_KEY = "td-catalog-live-v1";
     const RESULT_LIMIT = 120;
 
     let products = [];
@@ -1162,26 +1163,60 @@
     });
     document.getElementById("btnPrint").addEventListener("click", () => window.print());
 
+    function loadLiveCatalog() {
+      try {
+        const raw = localStorage.getItem(LIVE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.products) || !data.products.length) return null;
+        return data;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyCatalogData(data) {
+      products = Array.isArray(data.products) ? data.products : [];
+      brands = Array.isArray(data.brands) && data.brands.length
+        ? data.brands
+        : [...new Set(products.map((p) => p.brand))].sort();
+      if (state.brand && !brands.includes(state.brand)) state.brand = null;
+      els.statusLine.innerHTML = `<span class="ok">Ready</span> · ${products.length} products · ${brands.length} brands`;
+      refresh();
+    }
+
     function boot() {
       loadDraft();
       try {
-        const data = window.PRODUCTS_DATA;
+        const data = loadLiveCatalog() || window.PRODUCTS_DATA;
         if (!data || !Array.isArray(data.products) || !data.products.length) {
           throw new Error("products-data.js is missing or empty");
         }
-        products = data.products;
-        brands = Array.isArray(data.brands) && data.brands.length
-          ? data.brands
-          : [...new Set(products.map((p) => p.brand))].sort();
-        if (state.brand && !brands.includes(state.brand)) state.brand = null;
-        els.statusLine.innerHTML = `<span class="ok">Ready</span> · ${products.length} products · ${brands.length} brands`;
-        refresh();
+        applyCatalogData(data);
       } catch (err) {
         console.error(err);
         els.statusLine.innerHTML = `<span style="color:var(--warn);font-weight:600">Load failed</span>`;
         els.catalog.innerHTML = `<div class="empty-hint">상품 데이터를 불러오지 못했습니다.<br/>같은 폴더의 products-data.js가 있는지 확인해 주세요.<br/>${escapeHtml(err.message || err)}</div>`;
       }
     }
+
+    window.addEventListener("storage", (e) => {
+      if (e.key !== LIVE_KEY && e.key !== LIVE_KEY + ":ping") return;
+      const live = loadLiveCatalog();
+      if (!live) return;
+      applyCatalogData(live);
+      toast("카탈로그가 업데이트되었습니다.");
+    });
+
+    // Same browser, returning from admin with focus
+    window.addEventListener("focus", () => {
+      const live = loadLiveCatalog();
+      if (!live) return;
+      const same = products.length === live.products.length &&
+        products.every((p, i) => p.id === live.products[i].id && !!p.outOfStock === !!live.products[i].outOfStock);
+      if (same) return;
+      applyCatalogData(live);
+    });
 
     boot();
   </script>

@@ -321,15 +321,68 @@
       text-align: center;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(900px 500px at 20% 0%, #efe4d2 0%, transparent 55%),
+        radial-gradient(700px 400px at 100% 100%, #e4ebe4 0%, transparent 50%),
+        rgba(243, 239, 231, 0.96);
+    }
+    .auth-gate[hidden] { display: none !important; }
+    .auth-card {
+      width: min(400px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 22px 20px;
+      display: grid;
+      gap: 12px;
+    }
+    .auth-card h2 {
+      margin: 0;
+      font-family: "Syne", "Segoe UI", sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+    .auth-card .err {
+      margin: 0;
+      color: var(--warn);
+      font-size: 0.84rem;
+      font-weight: 600;
+      min-height: 1.2em;
+    }
+    .app-root[hidden] { display: none !important; }
   </style>
 </head>
 <body>
+  <div class="auth-gate" id="authGate">
+    <form class="auth-card" id="authForm" autocomplete="off">
+      <div class="eyebrow">Admin access</div>
+      <h2>Password</h2>
+      <p class="note">관리자 비밀번호를 입력하세요.</p>
+      <label class="field">Password
+        <input type="password" id="authPassword" placeholder="Password" autofocus />
+      </label>
+      <p class="err" id="authError"></p>
+      <button type="submit" class="btn btn-primary">Enter</button>
+      <a class="btn btn-secondary" href="index.html">주문 페이지로</a>
+    </form>
+  </div>
+
+  <div class="app-root" id="appRoot" hidden>
   <div class="wrap">
     <header>
       <div>
         <div class="eyebrow">Catalog admin</div>
         <h1>T&amp;D Admin</h1>
-        <p class="sub">상품을 수정·추가·삭제한 뒤 저장하면 주문 페이지(`index.html`)에 반영됩니다.</p>
+        <p class="sub">변경 적용 시 주문 페이지에 바로 반영됩니다. (같은 브라우저)</p>
       </div>
       <div class="header-actions">
         <a class="btn btn-secondary" href="index.html">주문 페이지</a>
@@ -371,10 +424,14 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input type="file" id="imageInput" accept="image/*" hidden />
+  </div><!-- /.app-root -->
 
   <script src="products-data.js"></script>
   <script>
     const DRAFT_KEY = "td-admin-draft-v1";
+    const LIVE_KEY = "td-catalog-live-v1";
+    const AUTH_KEY = "td-admin-auth-v1";
+    const ADMIN_PASSWORD = "123456";
     let catalog = null;
     let products = [];
     let selectedId = null;
@@ -421,6 +478,30 @@
 
     function brandsOf(list) {
       return [...new Set(list.map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    }
+
+    function publishLiveCatalog() {
+      try {
+        const payload = buildExportPayload();
+        localStorage.setItem(LIVE_KEY, JSON.stringify(payload));
+        // Same-tab listeners (order page open in another tab uses storage event)
+        localStorage.setItem(LIVE_KEY + ":ping", String(Date.now()));
+      } catch (err) {
+        console.warn(err);
+        toast("주문 페이지 즉시 반영 실패 (저장 용량 확인).");
+      }
+    }
+
+    function loadLiveCatalog() {
+      try {
+        const raw = localStorage.getItem(LIVE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.products)) return null;
+        return data;
+      } catch {
+        return null;
+      }
     }
 
     function rebuildCatalogMeta() {
@@ -475,12 +556,16 @@
         toast("이어서 편집 중인 내용을 불러왔습니다.");
         return;
       }
-      const data = window.PRODUCTS_DATA;
+      const live = !forceFresh ? loadLiveCatalog() : null;
+      const data = live || window.PRODUCTS_DATA;
       if (!data || !Array.isArray(data.products)) throw new Error("products-data.js missing");
       catalog = JSON.parse(JSON.stringify(data));
       products = catalog.products;
       dirty = false;
-      clearDraft();
+      if (forceFresh) {
+        clearDraft();
+        try { localStorage.removeItem(LIVE_KEY); } catch { /* ignore */ }
+      }
     }
 
     function filteredProducts() {
@@ -583,9 +668,8 @@
         <label class="field">ID
           <input id="fId" value="${escapeHtml(p.id || "")}" ${isNew ? "" : "readonly"} />
         </label>
-        <p class="note">편집 후 상단 <strong>저장</strong>만 누르면 됩니다.<br/>
-          저장이 바로 되려면 <code>admin_server.py</code>로 연 주소(<code>http://127.0.0.1:8765/admin.html</code>)를 사용하세요.<br/>
-          파일을 더블클릭해서 연 경우에는 저장 파일이 다운로드되므로 <code>T&amp;D</code> 폴더에 덮어쓰면 됩니다.</p>
+        <p class="note"><strong>변경 적용</strong>하면 주문 페이지에 바로 표시됩니다. (같은 브라우저)<br/>
+          GitHub/파일에 영구 반영하려면 상단 <strong>저장</strong>도 하세요.</p>
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btnApply">변경 적용</button>
           <button type="button" class="btn btn-warn" id="btnDelete">Delete</button>
@@ -649,9 +733,10 @@
       p.outOfStock = !!document.getElementById("fOutOfStock").checked;
       selectedId = id;
       markDirty(true);
+      publishLiveCatalog();
       renderList();
       renderEditor();
-      toast("목록에 반영됨. 상단 저장을 누르면 파일에 기록됩니다.");
+      toast(p.outOfStock ? "OUT OF STOCK 적용 · 주문 페이지에 바로 반영됨" : "적용됨 · 주문 페이지에 바로 반영됨");
     }
 
     function deleteSelected() {
@@ -662,9 +747,10 @@
       selectedId = null;
       pendingImageFile = null;
       markDirty(true);
+      publishLiveCatalog();
       renderList();
       renderEditor();
-      toast("삭제됨. 상단 저장을 누르세요.");
+      toast("삭제됨 · 주문 페이지에 바로 반영됨");
     }
 
     function addItem() {
@@ -785,10 +871,11 @@
           dirty = false;
           pendingImageFile = null;
           clearDraft();
+          publishLiveCatalog();
           updateStatus();
           renderList();
           renderEditor();
-          toast("저장 완료. 주문 페이지를 새로고침하세요.");
+          toast("저장 완료. 주문 페이지에 반영됨.");
           return;
         } catch (err) {
           console.warn("API save failed", err);
@@ -813,6 +900,7 @@
       dirty = false;
       pendingImageFile = null;
       clearDraft();
+      publishLiveCatalog();
       updateStatus();
     }
 
@@ -862,7 +950,13 @@
       e.returnValue = "";
     });
 
-    function boot() {
+    function unlockAdmin() {
+      document.getElementById("authGate").hidden = true;
+      document.getElementById("appRoot").hidden = false;
+      bootApp();
+    }
+
+    function bootApp() {
       try {
         loadFromEmbedded(false);
         refresh();
@@ -873,7 +967,28 @@
       }
     }
 
-    boot();
+    document.getElementById("authForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = document.getElementById("authPassword");
+      const err = document.getElementById("authError");
+      if (String(input.value || "") === ADMIN_PASSWORD) {
+        try { sessionStorage.setItem(AUTH_KEY, "1"); } catch { /* ignore */ }
+        err.textContent = "";
+        unlockAdmin();
+        return;
+      }
+      err.textContent = "비밀번호가 올바르지 않습니다.";
+      input.focus();
+      input.select();
+    });
+
+    if (sessionStorage.getItem(AUTH_KEY) === "1") {
+      unlockAdmin();
+    } else {
+      setTimeout(() => {
+        try { document.getElementById("authPassword").focus(); } catch { /* ignore */ }
+      }, 50);
+    }
   </script>
 </body>
 </html>
