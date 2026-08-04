@@ -1,7 +1,7 @@
 {
   "title": "T&D and more",
   "source": "TDANDMORE.pdf",
-  "productCount": 367,
+  "productCount": 368,
   "brands": [
     "ALIVER",
     "ARM & HAMMER",
@@ -36,6 +36,7 @@
     "OTHERS",
     "PACINOS",
     "PEAR SOAP",
+    "PRAVANA",
     "PURELL",
     "RED ONE",
     "SECRET",
@@ -48,6 +49,17 @@
     "YARA"
   ],
   "products": [
+    {
+      "id": "123456789",
+      "name": "PRAVANA",
+      "brand": "PRAVANA",
+      "code": "T",
+      "size": "",
+      "price": 9.99,
+      "page": null,
+      "image": "images/123456789.gif",
+      "outOfStock": false
+    },
     {
       "id": "p01-00",
       "name": "ARM & HAMMER A/P ULTRA MAX SOLID POWDER FRESH",
