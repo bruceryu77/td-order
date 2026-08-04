@@ -1215,6 +1215,20 @@
       return /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
     }
 
+    function openCurrentPageInExternalBrowser() {
+      const url = location.href.split("#")[0];
+      // KakaoTalk Android helper: open the same page in Chrome/system browser
+      if (isKakaoInAppBrowser() && isAndroid()) {
+        try {
+          location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    }
+
     function shareTextToKakaoViaAndroidIntent(text) {
       // Opens KakaoTalk share with plain text (works better inside Kakao in-app WebView)
       const payload = encodeURIComponent(text);
@@ -1432,9 +1446,36 @@
     }
 
     document.getElementById("btnPrint").addEventListener("click", () => {
+      if (isKakaoInAppBrowser()) {
+        const items = getItems();
+        if (!items.length) return toast("Cart is empty.");
+        if (!requireStoreName()) return;
+
+        // Android Kakao: try opening in Chrome / external browser
+        if (openCurrentPageInExternalBrowser()) {
+          toast("Chrome에서 연 뒤 Cart → Print 를 눌러 주세요.");
+          return;
+        }
+
+        // iOS Kakao (and Android fallback): manual guide
+        alert(
+          "카톡에서는 인쇄가 지원되지 않습니다.\n\n" +
+          "우측 상단 ⋯ 메뉴 → Safari(또는 Chrome)에서 열기\n" +
+          "→ Cart → Print"
+        );
+        toast("⋯ 메뉴에서 Safari/Chrome으로 열어 주세요.");
+        return;
+      }
+
       if (!preparePrint()) return;
       window.print();
     });
+
+    // Kakao in-app: clarify Print button (no system print UI)
+    if (isKakaoInAppBrowser()) {
+      const btnPrint = document.getElementById("btnPrint");
+      if (btnPrint) btnPrint.textContent = "Print (브라우저에서)";
+    }
 
     function loadLiveCatalog() {
       try {
