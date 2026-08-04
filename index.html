@@ -892,7 +892,7 @@
             <div class="name">${escapeHtml(p.name)}</div>
             <div class="bits">
               <span class="price">${escapeHtml(money(p.price))}</span>
-              ${qty ? `<span class="cart-qty">${qty}</span>` : (p.code ? `<span>${escapeHtml(p.code)}</span>` : `<span></span>`)}
+              ${qty ? `<span class="cart-qty">${qty}</span>` : ""}
             </div>
           </div>
         </button>
