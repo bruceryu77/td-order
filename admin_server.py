@@ -190,7 +190,12 @@ class Handler(SimpleHTTPRequestHandler):
                 {
                     "ok": True,
                     "count": len(catalog["products"]),
-                    "github": github,
+                    "serverVersion": 2,
+                    "github": github if github is not None else {
+                        "ok": False,
+                        "pushed": False,
+                        "error": "GitHub publish skipped",
+                    },
                 },
             )
         except Exception as exc:

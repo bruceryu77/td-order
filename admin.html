@@ -851,9 +851,13 @@
     }
 
     function toastGithubResult(result) {
-      const gh = result && result.github;
+      if (!result || result.serverVersion < 2) {
+        toast("저장됨 · 서버가 예전 버전입니다. start_admin.bat 창을 닫고 다시 실행하세요.");
+        return;
+      }
+      const gh = result.github;
       if (!gh) {
-        toast("저장 완료. (로컬만 — GitHub 결과 없음)");
+        toast("저장됨 · 서버를 재시작해 주세요 (start_admin.bat).");
         return;
       }
       if (gh.ok && gh.pushed) {
