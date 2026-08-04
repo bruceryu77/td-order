@@ -10,15 +10,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #f3efe7;
-      --ink: #1c1a17;
-      --muted: #6b655c;
-      --line: #ddd4c6;
+      --bg: #f2f3f5;
+      --ink: #1a1c1e;
+      --muted: #6b7280;
+      --line: #d5d8de;
       --accent: #2f5d4a;
       --accent-hover: #254a3b;
       --warn: #a33b2b;
-      --shadow: 0 10px 30px rgba(40, 30, 15, 0.08);
-      --panel: #fffdf9;
+      --shadow: 0 10px 30px rgba(30, 35, 45, 0.08);
+      --panel: #fafbfc;
+      --surface: #ffffff;
+      --soft: #e8eaee;
+      --soft-hover: #dfe2e8;
+      --head: #eceef2;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
@@ -26,8 +30,8 @@
       font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(1200px 600px at 10% -10%, #efe4d2 0%, transparent 55%),
-        radial-gradient(900px 500px at 100% 0%, #e4ebe4 0%, transparent 50%),
+        radial-gradient(1200px 600px at 10% -10%, #e6e8ec 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e9ecef 0%, transparent 50%),
         var(--bg);
     }
     .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 16px 100px; }
@@ -79,7 +83,7 @@
       flex-wrap: wrap;
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
-      background: #f7f2ea;
+      background: var(--head);
     }
     .panel-head h2 { margin: 0; font-size: 1rem; }
     .filters { padding: 14px 16px 0; display: grid; gap: 10px; }
@@ -208,7 +212,7 @@
       aspect-ratio: 3 / 4;
       width: 100%;
       object-fit: cover;
-      background: #f0ece4;
+      background: var(--soft);
       display: block;
     }
     .product-card .meta {
@@ -304,8 +308,8 @@
     }
     .btn-primary { background: var(--accent); color: #f7faf8; }
     .btn-primary:hover { background: var(--accent-hover); }
-    .btn-secondary { background: #efe8dc; color: var(--ink); }
-    .btn-secondary:hover { background: #e6ddd0; }
+    .btn-secondary { background: var(--soft); color: var(--ink); }
+    .btn-secondary:hover { background: var(--soft-hover); }
     .btn-sm { padding: 8px 12px; font-size: 0.82rem; }
     .btns { display: grid; gap: 8px; }
     .btns .full { grid-column: 1 / -1; }
@@ -318,7 +322,7 @@
       border: 1px dashed var(--line);
       border-radius: 12px;
       padding: 12px;
-      background: #fffdf9;
+      background: var(--panel);
       min-height: 120px;
       max-height: min(50vh, 420px);
       overflow: auto;
@@ -451,7 +455,7 @@
     .sheet-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(20, 16, 10, 0.45);
+      background: rgba(20, 24, 30, 0.45);
       display: none;
       place-items: end center;
       z-index: 950;
@@ -472,7 +476,7 @@
       width: min(560px, 100%);
       max-width: 100%;
       margin: 0 auto;
-      background: #fffdf9;
+      background: var(--panel);
       border-radius: 16px 16px 12px 12px;
       box-shadow: var(--shadow);
       padding: 16px;
@@ -489,7 +493,7 @@
     }
     #cartSheet .summary {
       background: #fff;
-      border: 1.5px dashed #d9d0c4;
+      border: 1.5px dashed var(--line);
       padding: 6px 12px;
     }
     #cartSheet .summary.empty {
@@ -533,7 +537,7 @@
       height: 118px;
       object-fit: cover;
       border-radius: 8px;
-      background: #f0ece4;
+      background: var(--soft);
       flex-shrink: 0;
     }
     .product-sheet-info { min-width: 0; flex: 1; display: grid; gap: 6px; }
