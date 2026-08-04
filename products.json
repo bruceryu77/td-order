@@ -79,7 +79,7 @@
       "price": 2.25,
       "page": 1,
       "image": "images/p01-02-70-2.jpg",
-      "outOfStock": false
+      "outOfStock": true
     },
     {
       "id": "p01-03",
