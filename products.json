@@ -57,7 +57,7 @@
       "price": 2.25,
       "page": 1,
       "image": "images/p01-00-arm-hammer-a-p-ultra-max-solid-powder-fresh.jpg",
-      "outOfStock": false
+      "outOfStock": true
     },
     {
       "id": "p01-01",
@@ -68,7 +68,7 @@
       "price": 2.25,
       "page": 1,
       "image": "images/p01-01-70-1.jpg",
-      "outOfStock": false
+      "outOfStock": true
     },
     {
       "id": "p01-02",
