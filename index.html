@@ -1133,19 +1133,46 @@
       }
     }
 
-    function openKakaoTalkApp() {
-      // Best-effort: open KakaoTalk app so user can paste copied order text.
-      const schemes = ["kakaotalk://launch", "kakaotalk://"];
-      for (const href of schemes) {
-        try {
-          const a = document.createElement("a");
-          a.href = href;
-          a.style.display = "none";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          return true;
-        } catch { /* try next */ }
+    function isKakaoInAppBrowser() {
+      return /KAKAOTALK/i.test(navigator.userAgent || "");
+    }
+
+    function isAndroid() {
+      return /Android/i.test(navigator.userAgent || "");
+    }
+
+    function isIOS() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+    }
+
+    function shareTextToKakaoViaAndroidIntent(text) {
+      // Opens KakaoTalk share with plain text (works better inside Kakao in-app WebView)
+      const payload = encodeURIComponent(text);
+      const intentUrl =
+        "intent:#Intent;" +
+        "action=android.intent.action.SEND;" +
+        "type=text/plain;" +
+        "S.android.intent.extra.TEXT=" + payload + ";" +
+        "package=com.kakao.talk;" +
+        "end";
+      try {
+        location.href = intentUrl;
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function openCurrentPageInExternalBrowser() {
+      const url = location.href.split("#")[0];
+      if (isAndroid()) {
+        // KakaoTalk helper to open system/external browser
+        location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
+        return true;
+      }
+      if (isIOS()) {
+        // No reliable public scheme; user must use ⋯ → Safari
+        return false;
       }
       return false;
     }
@@ -1157,8 +1184,20 @@
         return false;
       }
 
-      // Plain text only (no Kakao SDK card / "자세히 보기")
-      if (navigator.share) {
+      const inKakao = isKakaoInAppBrowser();
+
+      // 1) Kakao in-app on Android: send plain text directly into KakaoTalk
+      if (inKakao && isAndroid()) {
+        const copied = await copyText(full);
+        shareTextToKakaoViaAndroidIntent(full);
+        toast(copied
+          ? "카카오톡으로 텍스트 공유 시도 중…"
+          : "카카오톡 공유를 시도합니다…");
+        return true;
+      }
+
+      // 2) Normal browsers (Chrome/Safari): system share sheet
+      if (navigator.share && !inKakao) {
         try {
           await navigator.share({ text: full });
           toast("공유창에서 카카오톡을 선택하세요.");
@@ -1169,11 +1208,20 @@
         }
       }
 
+      // 3) Kakao in-app on iOS (or share unavailable): copy + guide
+      //    Optionally open external browser so next time share works like Chrome/Safari.
       const copied = await copyText(full);
-      openKakaoTalkApp();
-      if (copied) {
-        toast("주문 내용 복사됨 · 카톡 채팅창에 붙여넣기");
+      if (inKakao && isIOS()) {
         openShareSheet(full);
+        toast(copied
+          ? "복사됨 · 카톡 채팅에 붙여넣기 (또는 ⋯→Safari에서 열기)"
+          : "⋯ 메뉴에서 Safari로 연 뒤 다시 공유해 주세요.");
+        return true;
+      }
+
+      if (copied) {
+        openShareSheet(full);
+        toast("주문 내용 복사됨 · 카톡 채팅창에 붙여넣기");
         return true;
       }
       openShareSheet(full);
