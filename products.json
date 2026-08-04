@@ -310,7 +310,7 @@
       "price": 1,
       "page": 5,
       "image": "images/p05-00-bic-shaver-5pk-single-blade-normal.jpg",
-      "outOfStock": true
+      "outOfStock": false
     },
     {
       "id": "p05-01",
@@ -332,7 +332,7 @@
       "price": 4.5,
       "page": 5,
       "image": "images/p05-02-75-3.jpg",
-      "outOfStock": true
+      "outOfStock": false
     },
     {
       "id": "p05-03",
