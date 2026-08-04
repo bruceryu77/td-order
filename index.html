@@ -504,13 +504,45 @@
     #cartSheet .summary.empty {
       min-height: 100px;
     }
-    #cartSheet .cart-store-field { margin: 0; }
+    #cartSheet .cart-store-field {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--ink);
+      letter-spacing: 0.03em;
+    }
     #cartSheet .cart-store-field input {
-      margin-top: 6px;
+      margin-top: 8px;
       text-transform: none;
       letter-spacing: normal;
-      font-weight: 500;
-      font-size: 0.95rem;
+      font-weight: 700;
+      font-size: 1.12rem;
+      padding: 13px 14px;
+      border-width: 1.5px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #cartSheet .cart-store-field.is-empty input {
+      border-color: #e0b84a;
+      animation: storePulse 1.5s ease-in-out infinite;
+    }
+    #cartSheet .cart-store-field.need-attention input {
+      border-color: #c45a3a;
+      animation: storeShake 0.45s ease;
+    }
+    @keyframes storePulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 200, 50, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 7px rgba(255, 200, 50, 0.12);
+      }
+    }
+    @keyframes storeShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
     }
     #cartSheet .btns .btn-primary,
     #cartSheet .btns .btn-secondary,
@@ -724,8 +756,8 @@
         <h3 id="cartTitle">Cart</h3>
         <button type="button" class="btn-secondary btn-sm" id="btnCloseCart">Close</button>
       </div>
-      <label class="field cart-store-field">Store Name
-        <input type="text" id="orderNote" placeholder="Store name" autocomplete="organization" />
+      <label class="field cart-store-field" id="storeField">Store Name
+        <input type="text" id="orderNote" placeholder="매장명을 입력하세요" autocomplete="organization" required />
       </label>
       <div id="cartList" class="summary empty">Cart is empty.</div>
       <div class="btns">
@@ -803,6 +835,7 @@
       productSheetBody: document.getElementById("productSheetBody"),
       productQty: document.getElementById("productQty"),
       orderNote: document.getElementById("orderNote"),
+      storeField: document.getElementById("storeField"),
       shareSheet: document.getElementById("shareSheet"),
       shareText: document.getElementById("shareText"),
       toast: document.getElementById("toast"),
@@ -1061,8 +1094,27 @@
       `;
     }
 
+    function updateStoreFieldHint() {
+      const empty = !els.orderNote.value.trim();
+      els.storeField.classList.toggle("is-empty", empty);
+      if (!empty) els.storeField.classList.remove("need-attention");
+    }
+
+    function requireStoreName() {
+      if (els.orderNote.value.trim()) {
+        updateStoreFieldHint();
+        return true;
+      }
+      els.storeField.classList.add("is-empty", "need-attention");
+      els.orderNote.focus();
+      toast("Store Name을 입력해 주세요.");
+      setTimeout(() => els.storeField.classList.remove("need-attention"), 500);
+      return false;
+    }
+
     function openCart() {
       updateCart();
+      updateStoreFieldHint();
       els.cartSheet.classList.add("open");
       els.cartSheet.setAttribute("aria-hidden", "false");
     }
@@ -1236,6 +1288,7 @@
     function shareOrderFlow() {
       const items = getItems();
       if (!items.length) return toast("Cart is empty.");
+      if (!requireStoreName()) return;
       openShareSheet(orderText());
     }
 
@@ -1321,7 +1374,10 @@
       }
     });
 
-    els.orderNote.addEventListener("input", saveDraft);
+    els.orderNote.addEventListener("input", () => {
+      updateStoreFieldHint();
+      saveDraft();
+    });
 
     document.getElementById("btnClearQty").addEventListener("click", () => {
       const items = getItems();
@@ -1356,6 +1412,7 @@
         toast("Cart is empty.");
         return false;
       }
+      if (!requireStoreName()) return false;
       const text = orderText();
       const meta = document.getElementById("printMeta");
       const body = document.getElementById("printBody");
@@ -1403,6 +1460,7 @@
 
     function boot() {
       loadDraft();
+      updateStoreFieldHint();
       try {
         const data = loadLiveCatalog() || window.PRODUCTS_DATA;
         if (!data || !Array.isArray(data.products) || !data.products.length) {
