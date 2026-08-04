@@ -1034,13 +1034,21 @@
         lines.push(`Store Name: ${storeName}`);
         lines.push("");
       }
+      let totalAmount = 0;
+      let totalQty = 0;
       for (const [brand, list] of groups.entries()) {
         lines.push(brand);
-        list.forEach((i) => lines.push(`${i.name} - ${i.qty}`));
+        list.forEach((i) => {
+          const unit = Number(i.price);
+          const lineTotal = (Number.isFinite(unit) ? unit : 0) * i.qty;
+          totalAmount += lineTotal;
+          totalQty += i.qty;
+          const priceLabel = Number.isFinite(unit) ? money(unit) : "—";
+          lines.push(`${i.name} - ${i.qty} × ${priceLabel} = ${money(lineTotal)}`);
+        });
         lines.push("");
       }
-      const totalQty = items.reduce((s, i) => s + i.qty, 0);
-      lines.push(`Total: ${totalQty} pcs`);
+      lines.push(`Total: ${money(totalAmount)} (${totalQty} pcs)`);
       return lines.join("\n");
     }
 
@@ -1225,9 +1233,13 @@
       const body = document.getElementById("printBody");
       const storeName = els.orderNote.value.trim();
       const totalQty = items.reduce((s, i) => s + i.qty, 0);
+      const totalAmount = items.reduce((s, i) => {
+        const unit = Number(i.price);
+        return s + (Number.isFinite(unit) ? unit : 0) * i.qty;
+      }, 0);
       meta.textContent = [
         storeName ? `Store: ${storeName}` : null,
-        `${items.length} items · ${totalQty} pcs`,
+        `${items.length} items · ${totalQty} pcs · ${money(totalAmount)}`,
         new Date().toLocaleString()
       ].filter(Boolean).join(" · ");
       body.textContent = text;
