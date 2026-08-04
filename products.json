@@ -1,7 +1,7 @@
 {
   "title": "T&D and more",
   "source": "TDANDMORE.pdf",
-  "productCount": 367,
+  "productCount": 368,
   "brands": [
     "ALIVER",
     "ARM & HAMMER",
@@ -48,6 +48,17 @@
     "YARA"
   ],
   "products": [
+    {
+      "id": "new-1785881318214",
+      "name": "PRAVANA",
+      "brand": "OTHERS",
+      "code": "T",
+      "size": "2OZ",
+      "price": 9.99,
+      "page": null,
+      "image": "images/new-1785881318214.gif",
+      "outOfStock": false
+    },
     {
       "id": "p01-00",
       "name": "ARM & HAMMER A/P ULTRA MAX SOLID POWDER FRESH",
