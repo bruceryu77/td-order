@@ -586,17 +586,56 @@
       line-height: 1.45;
     }
 
+    .print-order {
+      display: none;
+    }
+
     @media print {
-      body { background: #fff; }
-      .filters, .cart-fab, .sheet-backdrop, .toast, header .sub { display: none !important; }
-      .wrap { padding: 0; max-width: none; }
-      .panel { box-shadow: none; border: none; }
-      .catalog { padding: 0; }
-      .photo-grid { grid-template-columns: repeat(4, 1fr); }
+      body {
+        background: #fff !important;
+        color: #000;
+      }
+      .wrap,
+      .cart-fab,
+      .sheet-backdrop,
+      .toast {
+        display: none !important;
+      }
+      .print-order {
+        display: block !important;
+        padding: 24px;
+        max-width: 720px;
+        margin: 0 auto;
+        font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      }
+      .print-order h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+      .print-order .print-meta {
+        margin: 0 0 18px;
+        color: #444;
+        font-size: 0.92rem;
+      }
+      .print-order pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, "Cascadia Mono", Consolas, "Malgun Gothic", monospace;
+        font-size: 12pt;
+        line-height: 1.55;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="print-order" id="printOrder" aria-hidden="true">
+    <h1>T&amp;D and more — Order</h1>
+    <p class="print-meta" id="printMeta"></p>
+    <pre id="printBody"></pre>
+  </div>
+
   <div class="wrap">
     <header>
       <div class="eyebrow">Order catalog</div>
@@ -1171,7 +1210,30 @@
     els.shareSheet.addEventListener("click", (e) => {
       if (e.target === els.shareSheet) closeShareSheet();
     });
-    document.getElementById("btnPrint").addEventListener("click", () => window.print());
+    function preparePrint() {
+      const items = getItems();
+      if (!items.length) {
+        toast("Cart is empty.");
+        return false;
+      }
+      const text = orderText();
+      const meta = document.getElementById("printMeta");
+      const body = document.getElementById("printBody");
+      const storeName = els.orderNote.value.trim();
+      const totalQty = items.reduce((s, i) => s + i.qty, 0);
+      meta.textContent = [
+        storeName ? `Store: ${storeName}` : null,
+        `${items.length} items · ${totalQty} pcs`,
+        new Date().toLocaleString()
+      ].filter(Boolean).join(" · ");
+      body.textContent = text;
+      return true;
+    }
+
+    document.getElementById("btnPrint").addEventListener("click", () => {
+      if (!preparePrint()) return;
+      window.print();
+    });
 
     function loadLiveCatalog() {
       try {
