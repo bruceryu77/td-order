@@ -1,9 +1,11 @@
-"""Local server for T&D order + admin save (writes products files to this folder)."""
+"""Local server for T&D order + admin save (writes files, then pushes to GitHub)."""
 from __future__ import annotations
 
 import json
 import mimetypes
 import re
+import subprocess
+from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import unquote
@@ -11,6 +13,93 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parent
 HOST = "127.0.0.1"
 PORT = 8765
+
+GIT_AUTHOR_NAME = "bruceryu77"
+GIT_AUTHOR_EMAIL = "bruceryu77@users.noreply.github.com"
+PUBLISH_PATHS = ("products.json", "products-data.js", "images")
+
+
+def _git(args: list[str], timeout: int = 90) -> subprocess.CompletedProcess[str]:
+    kwargs: dict = {
+        "args": ["git", *args],
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+        "encoding": "utf-8",
+        "errors": "replace",
+        "timeout": timeout,
+    }
+    # Hide extra console windows on Windows
+    if hasattr(subprocess, "CREATE_NO_WINDOW"):
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+    return subprocess.run(**kwargs)
+
+
+def publish_to_github() -> dict:
+    """Stage catalog files, commit if needed, push to origin."""
+    if not (ROOT / ".git").is_dir():
+        return {"ok": False, "pushed": False, "error": "Not a git repository"}
+
+    try:
+        add = _git(["add", "--", *PUBLISH_PATHS])
+        if add.returncode != 0:
+            return {
+                "ok": False,
+                "pushed": False,
+                "error": (add.stderr or add.stdout or "git add failed").strip(),
+            }
+
+        status = _git(["status", "--porcelain", "--", *PUBLISH_PATHS])
+        if status.returncode != 0:
+            return {
+                "ok": False,
+                "pushed": False,
+                "error": (status.stderr or "git status failed").strip(),
+            }
+        if not status.stdout.strip():
+            return {
+                "ok": True,
+                "pushed": False,
+                "message": "No catalog changes to push",
+            }
+
+        stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        commit = _git(
+            [
+                "-c", f"user.name={GIT_AUTHOR_NAME}",
+                "-c", f"user.email={GIT_AUTHOR_EMAIL}",
+                "commit",
+                "-m", f"Admin catalog update ({stamp})",
+            ]
+        )
+        if commit.returncode != 0:
+            return {
+                "ok": False,
+                "pushed": False,
+                "error": (commit.stderr or commit.stdout or "git commit failed").strip(),
+            }
+
+        branch = _git(["rev-parse", "--abbrev-ref", "HEAD"])
+        ref = (branch.stdout or "main").strip() or "main"
+
+        push = _git(["push", "origin", "HEAD"], timeout=120)
+        if push.returncode != 0:
+            return {
+                "ok": False,
+                "pushed": False,
+                "error": (push.stderr or push.stdout or "git push failed").strip(),
+            }
+
+        return {
+            "ok": True,
+            "pushed": True,
+            "branch": ref,
+            "message": f"Pushed to origin/{ref}",
+        }
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "pushed": False, "error": "Git push timed out"}
+    except Exception as exc:
+        return {"ok": False, "pushed": False, "error": str(exc)}
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -85,7 +174,25 @@ class Handler(SimpleHTTPRequestHandler):
                 images_dir.mkdir(exist_ok=True)
                 (images_dir / name).write_bytes(img_bytes)
 
-            self._json(200, {"ok": True, "count": len(catalog["products"])})
+            github = None
+            if payload.get("pushGithub", True):
+                print("Publishing catalog to GitHub...")
+                github = publish_to_github()
+                if github.get("ok") and github.get("pushed"):
+                    print("GitHub push OK:", github.get("message"))
+                elif github.get("ok"):
+                    print("GitHub:", github.get("message") or "nothing to push")
+                else:
+                    print("GitHub push failed:", github.get("error"))
+
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "count": len(catalog["products"]),
+                    "github": github,
+                },
+            )
         except Exception as exc:
             self._json(500, {"ok": False, "error": str(exc)})
 
@@ -107,6 +214,7 @@ def main():
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"T&D server running at http://{HOST}:{PORT}/")
     print(f"Admin: http://{HOST}:{PORT}/admin.html")
+    print("Save in Admin → writes files + pushes to GitHub automatically.")
     print("Press Ctrl+C to stop.")
     try:
         server.serve_forever()

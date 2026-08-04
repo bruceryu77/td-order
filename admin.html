@@ -385,7 +385,7 @@
       <div>
         <div class="eyebrow">Catalog admin</div>
         <h1>T&amp;D Admin</h1>
-        <p class="sub">변경 적용 시 주문 페이지에 바로 반영됩니다. (같은 브라우저)</p>
+        <p class="sub">start_admin.bat으로 연 뒤 저장하면 GitHub에 자동 업로드됩니다.</p>
       </div>
       <div class="header-actions">
         <a class="btn btn-secondary" href="index.html">주문 페이지</a>
@@ -672,7 +672,8 @@
           <input id="fId" value="${escapeHtml(p.id || "")}" ${isNew ? "" : "readonly"} />
         </label>
         <p class="note"><strong>변경 적용</strong>하면 주문 페이지에 바로 표시됩니다. (같은 브라우저)<br/>
-          GitHub/파일에 영구 반영하려면 상단 <strong>저장</strong>도 하세요.</p>
+          상단 <strong>저장</strong>을 누르면 파일 저장 후 <strong>GitHub에 자동 업로드</strong>됩니다.<br/>
+          (<code>start_admin.bat</code>으로 Admin을 연 경우에만 자동 업로드됩니다.)</p>
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btnApply">변경 적용</button>
           <button type="button" class="btn btn-warn" id="btnDelete">Delete</button>
@@ -826,7 +827,7 @@
     }
 
     async function saveViaApi(catalog, imageFile, imageName) {
-      const body = { catalog };
+      const body = { catalog, pushGithub: true };
       if (imageFile && imageName) {
         body.image = {
           name: imageName,
@@ -849,6 +850,23 @@
       return res.json();
     }
 
+    function toastGithubResult(result) {
+      const gh = result && result.github;
+      if (!gh) {
+        toast("저장 완료. (로컬만 — GitHub 결과 없음)");
+        return;
+      }
+      if (gh.ok && gh.pushed) {
+        toast("저장 + GitHub 업로드 완료. 1~2분 후 사이트에 반영됩니다.");
+        return;
+      }
+      if (gh.ok && !gh.pushed) {
+        toast("저장 완료. GitHub에 올릴 변경이 없습니다.");
+        return;
+      }
+      toast("저장됨 · GitHub 업로드 실패: " + (gh.error || "unknown"));
+    }
+
     async function saveAll() {
       if (getSelected() && document.getElementById("fName")) {
         applyEditor();
@@ -867,10 +885,10 @@
 
       const finalPayload = buildExportPayload();
 
-      // Prefer local admin_server.py (no folder picker)
+      // Prefer local admin_server.py (writes files + GitHub push)
       if (location.protocol !== "file:") {
         try {
-          await saveViaApi(finalPayload, imageFile, imageName);
+          const result = await saveViaApi(finalPayload, imageFile, imageName);
           dirty = false;
           pendingImageFile = null;
           clearDraft();
@@ -878,10 +896,11 @@
           updateStatus();
           renderList();
           renderEditor();
-          toast("저장 완료. 주문 페이지에 반영됨.");
+          toastGithubResult(result);
           return;
         } catch (err) {
           console.warn("API save failed", err);
+          toast("서버 저장 실패: " + (err.message || err) + " — 다운로드로 대체합니다.");
         }
       }
 
