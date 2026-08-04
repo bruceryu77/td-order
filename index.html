@@ -1044,7 +1044,7 @@
           totalAmount += lineTotal;
           totalQty += i.qty;
           const priceLabel = Number.isFinite(unit) ? money(unit) : "—";
-          lines.push(`${i.name} - ${i.qty} × ${priceLabel} = ${money(lineTotal)}`);
+          lines.push(`${i.name} - ${priceLabel} x ${i.qty} (pcs)`);
         });
         lines.push("");
       }
