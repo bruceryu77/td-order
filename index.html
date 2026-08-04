@@ -515,9 +515,22 @@
     }
     #cartSheet .btns .btn-primary,
     #cartSheet .btns .btn-secondary,
-    #cartSheet .btns .btn-clear-cart,
-    #cartSheet .btns .btn-kakao {
+    #cartSheet .btns .btn-clear-cart {
       min-height: 46px;
+    }
+
+    #shareSheet .share-choice .btns {
+      grid-template-columns: 1fr 1fr;
+    }
+    #shareSheet .share-fallback {
+      display: none;
+      margin-top: 12px;
+    }
+    #shareSheet.fallback-open .share-fallback {
+      display: block;
+    }
+    #shareSheet.fallback-open .share-choice-note {
+      display: none;
     }
 
     .cart-sheet-head {
@@ -709,7 +722,6 @@
       </label>
       <div id="cartList" class="summary empty">Cart is empty.</div>
       <div class="btns">
-        <button type="button" class="btn-kakao" id="btnKakaoCart">카카오톡</button>
         <button type="button" class="btn-primary" id="btnSave">Save / Share</button>
         <button type="button" class="btn-secondary" id="btnPrint">Print</button>
         <button type="button" class="btn-clear-cart full" id="btnClearQty">Clear Cart</button>
@@ -737,15 +749,21 @@
 
   <div class="sheet-backdrop" id="shareSheet" aria-hidden="true">
     <div class="sheet" role="dialog" aria-labelledby="shareTitle">
-      <h3 id="shareTitle">Send order via KakaoTalk or SMS</h3>
-      <p class="note">카카오톡으로 보내거나, 아래 텍스트를 복사해 붙여넣으세요.</p>
-      <textarea id="shareText" readonly></textarea>
-      <div class="btns">
-        <button type="button" class="btn-kakao" id="btnKakaoShare">카카오톡</button>
-        <button type="button" class="btn-primary" id="btnCopyText">Copy Text</button>
-        <button type="button" class="btn-secondary" id="btnShareNative">Share</button>
-        <button type="button" class="btn-secondary" id="btnSms">Send SMS</button>
-        <button type="button" class="btn-secondary full" id="btnCloseSheet">Close</button>
+      <h3 id="shareTitle">주문 보내기</h3>
+      <p class="note share-choice-note">보낼 방법을 선택하세요.</p>
+      <div class="share-choice">
+        <div class="btns">
+          <button type="button" class="btn-kakao" id="btnKakaoShare">카카오톡</button>
+          <button type="button" class="btn-secondary" id="btnSms">문자</button>
+          <button type="button" class="btn-secondary full" id="btnCloseSheet">Close</button>
+        </div>
+      </div>
+      <div class="share-fallback" id="shareFallback">
+        <p class="note">텍스트가 복사되었습니다. 필요하면 아래 내용을 붙여넣으세요.</p>
+        <textarea id="shareText" readonly></textarea>
+        <div class="btns" style="margin-top:8px">
+          <button type="button" class="btn-primary full" id="btnCopyText">Copy Text</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1101,18 +1119,22 @@
       }
     }
 
-    function openShareSheet(text) {
-      els.shareText.value = text;
+    function openShareSheet(text, { fallback = false } = {}) {
+      const full = String(text || "").trim();
+      els.shareText.value = full;
+      els.shareSheet.classList.toggle("fallback-open", !!fallback);
       els.shareSheet.classList.add("open");
       els.shareSheet.setAttribute("aria-hidden", "false");
-      setTimeout(() => {
-        els.shareText.focus();
-        els.shareText.select();
-      }, 50);
+      if (fallback) {
+        setTimeout(() => {
+          els.shareText.focus();
+          els.shareText.select();
+        }, 50);
+      }
     }
 
     function closeShareSheet() {
-      els.shareSheet.classList.remove("open");
+      els.shareSheet.classList.remove("open", "fallback-open");
       els.shareSheet.setAttribute("aria-hidden", "true");
     }
 
@@ -1120,17 +1142,6 @@
       const body = encodeURIComponent(text);
       if (/iPhone|iPad|iPod/i.test(navigator.userAgent || "")) return `sms:&body=${body}`;
       return `sms:?body=${body}`;
-    }
-
-    async function shareNative(text) {
-      if (!navigator.share) return false;
-      try {
-        await navigator.share({ text });
-        return true;
-      } catch (err) {
-        if (err && err.name === "AbortError") return true;
-        return false;
-      }
     }
 
     function isKakaoInAppBrowser() {
@@ -1163,20 +1174,6 @@
       }
     }
 
-    function openCurrentPageInExternalBrowser() {
-      const url = location.href.split("#")[0];
-      if (isAndroid()) {
-        // KakaoTalk helper to open system/external browser
-        location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
-        return true;
-      }
-      if (isIOS()) {
-        // No reliable public scheme; user must use ⋯ → Safari
-        return false;
-      }
-      return false;
-    }
-
     async function shareKakao(text) {
       const full = String(text || "").trim();
       if (!full) {
@@ -1190,57 +1187,56 @@
       if (inKakao && isAndroid()) {
         const copied = await copyText(full);
         shareTextToKakaoViaAndroidIntent(full);
+        closeShareSheet();
         toast(copied
           ? "카카오톡으로 텍스트 공유 시도 중…"
           : "카카오톡 공유를 시도합니다…");
         return true;
       }
 
-      // 2) Normal browsers (Chrome/Safari): system share sheet
+      // 2) Normal browsers (Chrome/Safari): system share sheet → pick KakaoTalk
       if (navigator.share && !inKakao) {
         try {
           await navigator.share({ text: full });
+          closeShareSheet();
           toast("공유창에서 카카오톡을 선택하세요.");
           return true;
         } catch (err) {
-          if (err && err.name === "AbortError") return true;
+          if (err && err.name === "AbortError") {
+            closeShareSheet();
+            return true;
+          }
           console.warn(err);
         }
       }
 
-      // 3) Kakao in-app on iOS (or share unavailable): copy + guide
-      //    Optionally open external browser so next time share works like Chrome/Safari.
+      // 3) Kakao in-app on iOS (or share unavailable): copy + paste guide
       const copied = await copyText(full);
+      openShareSheet(full, { fallback: true });
       if (inKakao && isIOS()) {
-        openShareSheet(full);
         toast(copied
           ? "복사됨 · 카톡 채팅에 붙여넣기 (또는 ⋯→Safari에서 열기)"
           : "⋯ 메뉴에서 Safari로 연 뒤 다시 공유해 주세요.");
         return true;
       }
 
-      if (copied) {
-        openShareSheet(full);
-        toast("주문 내용 복사됨 · 카톡 채팅창에 붙여넣기");
-        return true;
-      }
-      openShareSheet(full);
-      toast("텍스트를 복사해 카톡에 붙여넣기 해 주세요.");
-      return false;
+      toast(copied
+        ? "주문 내용 복사됨 · 카톡 채팅창에 붙여넣기"
+        : "텍스트를 복사해 카톡에 붙여넣기 해 주세요.");
+      return !!copied;
     }
 
-    async function shareOrderFlow() {
+    function shareOrderFlow() {
       const items = getItems();
       if (!items.length) return toast("Cart is empty.");
-      const text = orderText();
+      openShareSheet(orderText());
+    }
 
-      // Plain text share (pick KakaoTalk in the system sheet)
-      const ok = await shareKakao(text);
-      if (ok) return;
-
-      openShareSheet(text);
-      const copied = await copyText(text);
-      toast(copied ? "Order copied." : "Long-press the text to copy.");
+    function shareSms(text) {
+      const full = String(text || "").trim();
+      if (!full) return toast("Cart is empty.");
+      closeShareSheet();
+      window.location.href = smsHref(full);
     }
 
     function saveDraft() {
@@ -1326,12 +1322,6 @@
       toast("Cart cleared.");
     });
 
-    document.getElementById("btnKakaoCart").addEventListener("click", async () => {
-      const items = getItems();
-      if (!items.length) return toast("Cart is empty.");
-      await shareKakao(orderText());
-    });
-
     document.getElementById("btnSave").addEventListener("click", () => {
       shareOrderFlow();
     });
@@ -1343,12 +1333,8 @@
     document.getElementById("btnKakaoShare").addEventListener("click", async () => {
       await shareKakao(els.shareText.value || orderText());
     });
-    document.getElementById("btnShareNative").addEventListener("click", async () => {
-      const ok = await shareNative(els.shareText.value);
-      if (!ok) toast("Share not available on this device.");
-    });
     document.getElementById("btnSms").addEventListener("click", () => {
-      window.location.href = smsHref(els.shareText.value);
+      shareSms(els.shareText.value || orderText());
     });
     document.getElementById("btnCloseSheet").addEventListener("click", closeShareSheet);
     els.shareSheet.addEventListener("click", (e) => {
