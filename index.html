@@ -1158,7 +1158,11 @@
     }
 
     function pageShareUrl() {
-      return location.href.split("#")[0];
+      const configured = String(CFG.ORDER_SITE_URL || "").trim();
+      if (configured) {
+        return configured.endsWith("/") ? configured : configured + "/";
+      }
+      return "https://bruceryu77.github.io/td-order/";
     }
 
     async function shareKakao(text) {
@@ -1173,32 +1177,32 @@
         return false;
       }
 
-      const copied = await copyText(text);
-      const url = pageShareUrl();
-      // Kakao text template limit is ~200 chars; long orders rely on clipboard paste.
-      let payload = String(text || "");
-      if (payload.length > 180) {
-        payload = payload.slice(0, 180).trimEnd() + "…";
-        payload += "\n\n전체 주문은 복사되었습니다. 채팅창에 붙여넣기 하세요.";
+      const full = String(text || "").trim();
+      const copied = await copyText(full);
+      // Kakao text template ~200 chars. Prefer full order when it fits.
+      let payload = full;
+      if (payload.length > 200) {
+        payload = payload.slice(0, 170).trimEnd() + "…\n(전체 주문 복사됨 · 붙여넣기)";
       }
 
       try {
+        // text 타입: 주문 내용 위주. link는 SDK 필수값이라만 넣음.
         Kakao.Share.sendDefault({
           objectType: "text",
           text: payload,
           link: {
-            mobileWebUrl: url,
-            webUrl: url
+            mobileWebUrl: pageShareUrl(),
+            webUrl: pageShareUrl()
           }
         });
         toast(copied
-          ? "카카오톡 공유창 열림 · 전체 주문 복사됨"
+          ? (full.length > 200 ? "카카오톡 공유 · 전체 주문 복사됨(붙여넣기)" : "카카오톡 공유창이 열렸습니다.")
           : "카카오톡 공유창이 열렸습니다.");
         return true;
       } catch (err) {
         console.warn(err);
         toast("카카오톡 공유 실패. 복사 후 붙여넣기 해 주세요.");
-        openShareSheet(text);
+        openShareSheet(full);
         return false;
       }
     }
