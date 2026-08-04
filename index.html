@@ -752,15 +752,12 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js" crossorigin="anonymous"></script>
   <script src="config.js"></script>
   <script src="products-data.js"></script>
   <script>
     const DRAFT_KEY = "td-order-draft-v1";
     const LIVE_KEY = "td-catalog-live-v1";
     const RESULT_LIMIT = 120;
-    const KAKAO_KEY_LS = "td-kakao-js-key";
-    const CFG = window.APP_CONFIG || {};
 
     let products = [];
     let brands = [];
@@ -1136,75 +1133,52 @@
       }
     }
 
-    function getKakaoJsKey() {
-      try {
-        const fromLs = (localStorage.getItem(KAKAO_KEY_LS) || "").trim();
-        if (fromLs) return fromLs;
-      } catch { /* ignore */ }
-      return String(CFG.KAKAO_JS_KEY || "").trim();
-    }
-
-    function initKakaoSdk() {
-      const key = getKakaoJsKey();
-      if (!key) return { ok: false, reason: "missing-key" };
-      if (!window.Kakao) return { ok: false, reason: "sdk" };
-      try {
-        if (!Kakao.isInitialized()) Kakao.init(key);
-        return Kakao.isInitialized() ? { ok: true } : { ok: false, reason: "init" };
-      } catch (err) {
-        console.warn(err);
-        return { ok: false, reason: "init" };
+    function openKakaoTalkApp() {
+      // Best-effort: open KakaoTalk app so user can paste copied order text.
+      const schemes = ["kakaotalk://launch", "kakaotalk://"];
+      for (const href of schemes) {
+        try {
+          const a = document.createElement("a");
+          a.href = href;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          return true;
+        } catch { /* try next */ }
       }
-    }
-
-    function pageShareUrl() {
-      const configured = String(CFG.ORDER_SITE_URL || "").trim();
-      if (configured) {
-        return configured.endsWith("/") ? configured : configured + "/";
-      }
-      return "https://bruceryu77.github.io/td-order/";
+      return false;
     }
 
     async function shareKakao(text) {
-      const ready = initKakaoSdk();
-      if (!ready.ok) {
-        if (ready.reason === "missing-key") {
-          toast("config.js에 카카오 JavaScript 키를 넣어 주세요.");
-          openShareSheet(text);
-          return false;
-        }
-        toast("카카오 SDK를 불러오지 못했습니다.");
-        return false;
-      }
-
       const full = String(text || "").trim();
-      const copied = await copyText(full);
-      // Kakao text template ~200 chars. Prefer full order when it fits.
-      let payload = full;
-      if (payload.length > 200) {
-        payload = payload.slice(0, 170).trimEnd() + "…\n(전체 주문 복사됨 · 붙여넣기)";
-      }
-
-      try {
-        // text 타입: 주문 내용 위주. link는 SDK 필수값이라만 넣음.
-        Kakao.Share.sendDefault({
-          objectType: "text",
-          text: payload,
-          link: {
-            mobileWebUrl: pageShareUrl(),
-            webUrl: pageShareUrl()
-          }
-        });
-        toast(copied
-          ? (full.length > 200 ? "카카오톡 공유 · 전체 주문 복사됨(붙여넣기)" : "카카오톡 공유창이 열렸습니다.")
-          : "카카오톡 공유창이 열렸습니다.");
-        return true;
-      } catch (err) {
-        console.warn(err);
-        toast("카카오톡 공유 실패. 복사 후 붙여넣기 해 주세요.");
-        openShareSheet(full);
+      if (!full) {
+        toast("Cart is empty.");
         return false;
       }
+
+      // Plain text only (no Kakao SDK card / "자세히 보기")
+      if (navigator.share) {
+        try {
+          await navigator.share({ text: full });
+          toast("공유창에서 카카오톡을 선택하세요.");
+          return true;
+        } catch (err) {
+          if (err && err.name === "AbortError") return true;
+          console.warn(err);
+        }
+      }
+
+      const copied = await copyText(full);
+      openKakaoTalkApp();
+      if (copied) {
+        toast("주문 내용 복사됨 · 카톡 채팅창에 붙여넣기");
+        openShareSheet(full);
+        return true;
+      }
+      openShareSheet(full);
+      toast("텍스트를 복사해 카톡에 붙여넣기 해 주세요.");
+      return false;
     }
 
     async function shareOrderFlow() {
@@ -1212,20 +1186,10 @@
       if (!items.length) return toast("Cart is empty.");
       const text = orderText();
 
-      // Prefer Kakao when configured
-      if (getKakaoJsKey()) {
-        const ok = await shareKakao(text);
-        if (ok) return;
-      }
+      // Plain text share (pick KakaoTalk in the system sheet)
+      const ok = await shareKakao(text);
+      if (ok) return;
 
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
-      if (isMobile && navigator.share) {
-        const shared = await shareNative(text);
-        if (shared) {
-          toast("Share sheet opened.");
-          return;
-        }
-      }
       openShareSheet(text);
       const copied = await copyText(text);
       toast(copied ? "Order copied." : "Long-press the text to copy.");
