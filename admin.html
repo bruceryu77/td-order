@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>T&amp;D Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a17;
+      --muted: #6b655c;
+      --line: #ddd4c6;
+      --accent: #2f5d4a;
+      --accent-hover: #254a3b;
+      --warn: #a33b2b;
+      --shadow: 0 10px 30px rgba(40, 30, 15, 0.08);
+      --panel: #fffdf9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #efe4d2 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e4ebe4 0%, transparent 50%),
+        var(--bg);
+    }
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 22px 16px 80px; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Syne", "Segoe UI", sans-serif;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+    .sub { margin: 8px 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; max-width: 52ch; }
+    .header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn, button.btn {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: #f7faf8; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #efe8dc; color: var(--ink); }
+    .btn-secondary:hover { background: #e6ddd0; }
+    .btn-warn { background: #fce6e2; color: var(--warn); }
+    .btn-warn:hover { background: #f6d6d0; }
+    .btn-sm { padding: 8px 11px; font-size: 0.82rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (min-width: 960px) {
+      .layout { grid-template-columns: 1.15fr 0.85fr; }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f7f2ea;
+    }
+    .panel-head h2 { margin: 0; font-size: 1rem; }
+    .panel-body { padding: 14px 16px 18px; display: grid; gap: 12px; }
+
+    .filters {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .filters { grid-template-columns: 200px 1fr auto; align-items: end; }
+    }
+
+    label.field {
+      display: grid;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      outline-offset: 1px;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 36px;
+    }
+
+    .status {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+    .status .ok { color: var(--accent); font-weight: 600; }
+    .status .dirty { color: #8a5a18; font-weight: 600; }
+
+    .list {
+      display: grid;
+      gap: 8px;
+      max-height: min(70vh, 760px);
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      color: inherit;
+      width: 100%;
+    }
+    .row:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+    .row.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+      background: #f4faf7;
+    }
+    .row img {
+      width: 56px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f0ece4;
+    }
+    .row .name {
+      font-weight: 700;
+      font-size: 0.86rem;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .row .meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .oos-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #fce6e2;
+      color: var(--warn);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+    .stock-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stock-toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--warn);
+      cursor: pointer;
+    }
+    .stock-toggle .label-text {
+      display: grid;
+      gap: 2px;
+    }
+    .stock-toggle .label-text strong {
+      font-size: 0.9rem;
+      color: var(--warn);
+      letter-spacing: 0.02em;
+    }
+    .stock-toggle .label-text span {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    .stock-toggle.on {
+      border-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+      background: #fff6f4;
+    }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 28px 10px;
+      line-height: 1.5;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 560px) {
+      .form-grid.two { grid-template-columns: 1fr 1fr; }
+    }
+    .preview-box {
+      display: grid;
+      gap: 10px;
+      justify-items: start;
+    }
+    .preview-box img {
+      width: 140px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #f0ece4;
+    }
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 4px;
+    }
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(20px);
+      background: #1c1a17;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s ease;
+      z-index: 50;
+      max-width: min(92vw, 420px);
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="eyebrow">Catalog admin</div>
+        <h1>T&amp;D Admin</h1>
+        <p class="sub">상품을 수정·추가·삭제한 뒤 저장하면 주문 페이지(`index.html`)에 반영됩니다.</p>
+      </div>
+      <div class="header-actions">
+        <a class="btn btn-secondary" href="index.html">주문 페이지</a>
+        <button type="button" class="btn btn-secondary" id="btnAdd">+ Add Item</button>
+        <button type="button" class="btn btn-primary" id="btnSave">저장</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Items</h2>
+          <div class="status" id="statusLine">Loading…</div>
+        </div>
+        <div class="panel-body">
+          <div class="filters">
+            <label class="field">Brand
+              <select id="brandFilter"></select>
+            </label>
+            <label class="field">Search
+              <input type="search" id="search" placeholder="이름, 코드, 브랜드…" autocomplete="off" />
+            </label>
+            <button type="button" class="btn btn-secondary" id="btnReload">다시 불러오기</button>
+          </div>
+          <div class="list" id="list"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 id="editorTitle">Edit Item</h2>
+        </div>
+        <div class="panel-body" id="editor">
+          <p class="empty">왼쪽에서 상품을 선택하거나 Add Item을 누르세요.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="imageInput" accept="image/*" hidden />
+
+  <script src="products-data.js"></script>
+  <script>
+    const DRAFT_KEY = "td-admin-draft-v1";
+    let catalog = null;
+    let products = [];
+    let selectedId = null;
+    let dirty = false;
+    let pendingImageFile = null;
+    let toastTimer = null;
+
+    const els = {
+      list: document.getElementById("list"),
+      editor: document.getElementById("editor"),
+      editorTitle: document.getElementById("editorTitle"),
+      brandFilter: document.getElementById("brandFilter"),
+      search: document.getElementById("search"),
+      statusLine: document.getElementById("statusLine"),
+      imageInput: document.getElementById("imageInput"),
+      toast: document.getElementById("toast"),
+    };
+
+    function toast(msg) {
+      els.toast.textContent = msg;
+      els.toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2000);
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function money(n) {
+      if (n == null || n === "" || Number.isNaN(Number(n))) return "—";
+      return "$" + Number(n).toFixed(2);
+    }
+
+    function markDirty(v = true) {
+      dirty = v;
+      updateStatus();
+      saveDraft();
+    }
+
+    function brandsOf(list) {
+      return [...new Set(list.map((p) => p.brand).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    }
+
+    function rebuildCatalogMeta() {
+      catalog.products = products;
+      catalog.brands = brandsOf(products);
+      catalog.productCount = products.length;
+      catalog.title = catalog.title || "T&D and more";
+    }
+
+    function updateStatus() {
+      const flag = dirty
+        ? `<span class="dirty">Unsaved changes</span>`
+        : `<span class="ok">Saved</span>`;
+      els.statusLine.innerHTML = `${flag} · ${products.length} items · ${brandsOf(products).length} brands`;
+    }
+
+    function saveDraft() {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          selectedId,
+          dirty,
+          catalog: {
+            ...catalog,
+            products,
+            brands: brandsOf(products),
+            productCount: products.length,
+          }
+        }));
+      } catch { /* quota */ }
+    }
+
+    function loadDraft() {
+      try {
+        const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+        if (!draft || !draft.catalog || !Array.isArray(draft.catalog.products)) return false;
+        catalog = draft.catalog;
+        products = draft.catalog.products;
+        selectedId = draft.selectedId || null;
+        dirty = !!draft.dirty;
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    function clearDraft() {
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    }
+
+    function loadFromEmbedded(forceFresh) {
+      if (!forceFresh && loadDraft() && dirty) {
+        toast("이어서 편집 중인 내용을 불러왔습니다.");
+        return;
+      }
+      const data = window.PRODUCTS_DATA;
+      if (!data || !Array.isArray(data.products)) throw new Error("products-data.js missing");
+      catalog = JSON.parse(JSON.stringify(data));
+      products = catalog.products;
+      dirty = false;
+      clearDraft();
+    }
+
+    function filteredProducts() {
+      const brand = els.brandFilter.value;
+      const q = els.search.value.trim().toLowerCase();
+      return products.filter((p) => {
+        if (brand && p.brand !== brand) return false;
+        if (!q) return true;
+        const hay = `${p.name || ""} ${p.brand || ""} ${p.code || ""} ${p.size || ""} ${p.id || ""}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderBrandFilter() {
+      const current = els.brandFilter.value;
+      const brands = brandsOf(products);
+      els.brandFilter.innerHTML = [
+        `<option value="">All brands</option>`,
+        ...brands.map((b) => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`)
+      ].join("");
+      if (brands.includes(current)) els.brandFilter.value = current;
+    }
+
+    function renderList() {
+      renderBrandFilter();
+      const list = filteredProducts();
+      if (!list.length) {
+        els.list.innerHTML = `<div class="empty">일치하는 상품이 없습니다.</div>`;
+        return;
+      }
+      els.list.innerHTML = list.map((p) => `
+        <button type="button" class="row${p.id === selectedId ? " active" : ""}" data-id="${escapeHtml(p.id)}">
+          <img src="${escapeHtml(p.image || "")}" alt="" loading="lazy"
+            onerror="this.style.opacity=0.25" />
+          <div>
+            <div class="name">${escapeHtml(p.name || "(no name)")}</div>
+            <div class="meta">
+              <span>${escapeHtml(p.brand || "—")}</span>
+              <span>${escapeHtml(p.code || "no code")}</span>
+              <span>${escapeHtml(money(p.price))}</span>
+              ${p.outOfStock ? `<span class="oos-badge">OUT OF STOCK</span>` : ""}
+            </div>
+          </div>
+          <span class="btn btn-secondary btn-sm" data-edit="${escapeHtml(p.id)}">Edit</span>
+        </button>
+      `).join("");
+    }
+
+    function getSelected() {
+      return products.find((p) => p.id === selectedId) || null;
+    }
+
+    function renderEditor() {
+      const p = getSelected();
+      if (!p) {
+        els.editorTitle.textContent = "Edit Item";
+        els.editor.innerHTML = `<p class="empty">왼쪽에서 상품을 선택하거나 Add Item을 누르세요.</p>`;
+        return;
+      }
+      const isNew = String(p.id || "").startsWith("new-");
+      els.editorTitle.textContent = isNew ? "Add Item" : "Edit Item";
+      els.editor.innerHTML = `
+        <div class="preview-box">
+          <img id="previewImg" src="${escapeHtml(p.image || "")}" alt=""
+            onerror="this.style.opacity=0.3" />
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnPickImage">이미지 변경</button>
+          </div>
+        </div>
+        <div class="form-grid two">
+          <label class="field">Name
+            <input id="fName" value="${escapeHtml(p.name || "")}" />
+          </label>
+          <label class="field">Brand
+            <input id="fBrand" list="brandList" value="${escapeHtml(p.brand || "")}" />
+          </label>
+          <label class="field">Code
+            <input id="fCode" value="${escapeHtml(p.code || "")}" />
+          </label>
+          <label class="field">Size
+            <input id="fSize" value="${escapeHtml(p.size || "")}" />
+          </label>
+          <label class="field">Price
+            <input id="fPrice" type="number" min="0" step="0.01" value="${p.price == null ? "" : escapeHtml(p.price)}" />
+          </label>
+          <label class="field">Image path
+            <input id="fImage" value="${escapeHtml(p.image || "")}" />
+          </label>
+        </div>
+        <label class="stock-toggle${p.outOfStock ? " on" : ""}" id="stockToggle">
+          <input type="checkbox" id="fOutOfStock" ${p.outOfStock ? "checked" : ""} />
+          <span class="label-text">
+            <strong>OUT OF STOCK</strong>
+            <span>체크하면 주문 페이지에 품절 표시가 됩니다.</span>
+          </span>
+        </label>
+        <datalist id="brandList">
+          ${brandsOf(products).map((b) => `<option value="${escapeHtml(b)}"></option>`).join("")}
+        </datalist>
+        <label class="field">ID
+          <input id="fId" value="${escapeHtml(p.id || "")}" ${isNew ? "" : "readonly"} />
+        </label>
+        <p class="note">편집 후 상단 <strong>저장</strong>만 누르면 됩니다.<br/>
+          저장이 바로 되려면 <code>admin_server.py</code>로 연 주소(<code>http://127.0.0.1:8765/admin.html</code>)를 사용하세요.<br/>
+          파일을 더블클릭해서 연 경우에는 저장 파일이 다운로드되므로 <code>T&amp;D</code> 폴더에 덮어쓰면 됩니다.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="btnApply">변경 적용</button>
+          <button type="button" class="btn btn-warn" id="btnDelete">Delete</button>
+        </div>
+      `;
+
+      document.getElementById("btnPickImage").addEventListener("click", () => els.imageInput.click());
+      document.getElementById("btnApply").addEventListener("click", applyEditor);
+      document.getElementById("btnDelete").addEventListener("click", deleteSelected);
+
+      const oos = document.getElementById("fOutOfStock");
+      const toggle = document.getElementById("stockToggle");
+      oos.addEventListener("change", () => {
+        toggle.classList.toggle("on", oos.checked);
+      });
+
+      ["fName", "fBrand", "fCode", "fSize", "fPrice", "fImage", "fId"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", () => {
+          if (id === "fImage") {
+            const img = document.getElementById("previewImg");
+            if (img) img.src = document.getElementById("fImage").value;
+          }
+        });
+      });
+    }
+
+    function selectProduct(id) {
+      selectedId = id;
+      pendingImageFile = null;
+      renderList();
+      renderEditor();
+      saveDraft();
+    }
+
+    function applyEditor() {
+      const p = getSelected();
+      if (!p) return;
+      const name = document.getElementById("fName").value.trim();
+      const brand = document.getElementById("fBrand").value.trim();
+      const code = document.getElementById("fCode").value.trim();
+      const size = document.getElementById("fSize").value.trim();
+      const priceRaw = document.getElementById("fPrice").value.trim();
+      const image = document.getElementById("fImage").value.trim();
+      let id = document.getElementById("fId").value.trim();
+
+      if (!name) return toast("Name을 입력하세요.");
+      if (!brand) return toast("Brand를 입력하세요.");
+      if (!id) id = `new-${Date.now()}`;
+
+      if (id !== p.id && products.some((x) => x.id === id)) {
+        return toast("이미 있는 ID입니다.");
+      }
+
+      p.id = id;
+      p.name = name;
+      p.brand = brand;
+      p.code = code;
+      p.size = size;
+      p.price = priceRaw === "" ? null : Number(priceRaw);
+      p.image = image || p.image || "";
+      p.outOfStock = !!document.getElementById("fOutOfStock").checked;
+      selectedId = id;
+      markDirty(true);
+      renderList();
+      renderEditor();
+      toast("목록에 반영됨. 상단 저장을 누르면 파일에 기록됩니다.");
+    }
+
+    function deleteSelected() {
+      const p = getSelected();
+      if (!p) return;
+      if (!confirm(`삭제할까요?\n${p.name}`)) return;
+      products = products.filter((x) => x.id !== p.id);
+      selectedId = null;
+      pendingImageFile = null;
+      markDirty(true);
+      renderList();
+      renderEditor();
+      toast("삭제됨. 상단 저장을 누르세요.");
+    }
+
+    function addItem() {
+      const id = `new-${Date.now()}`;
+      const brand = els.brandFilter.value || "";
+      const item = {
+        id,
+        name: "New product",
+        brand: brand || "OTHERS",
+        code: "",
+        size: "",
+        price: null,
+        page: null,
+        image: "",
+        outOfStock: false,
+      };
+      products.unshift(item);
+      markDirty(true);
+      selectProduct(id);
+      toast("새 상품을 추가했습니다. 정보를 입력하세요.");
+    }
+
+    function slugify(s) {
+      return String(s || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 48) || "item";
+    }
+
+    function buildExportPayload() {
+      rebuildCatalogMeta();
+      return {
+        title: catalog.title || "T&D and more",
+        source: catalog.source || "TDANDMORE.pdf",
+        productCount: products.length,
+        brands: brandsOf(products),
+        products: products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          code: p.code || "",
+          size: p.size || "",
+          price: p.price == null || p.price === "" ? null : Number(p.price),
+          page: p.page == null ? null : p.page,
+          image: p.image || "",
+          outOfStock: !!p.outOfStock,
+        })),
+      };
+    }
+
+    function downloadBlob(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveViaApi(catalog, imageFile, imageName) {
+      const body = { catalog };
+      if (imageFile && imageName) {
+        body.image = {
+          name: imageName,
+          dataUrl: await fileToDataUrl(imageFile),
+        };
+      }
+      const res = await fetch("/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`;
+        try {
+          const err = await res.json();
+          if (err && err.error) msg = err.error;
+        } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      return res.json();
+    }
+
+    async function saveAll() {
+      if (getSelected() && document.getElementById("fName")) {
+        applyEditor();
+      }
+
+      let imageName = null;
+      let imageFile = pendingImageFile;
+
+      if (imageFile) {
+        const ext = (imageFile.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+        const base = slugify((getSelected() && getSelected().id) || `img-${Date.now()}`);
+        imageName = `${base}.${ext === "jpeg" ? "jpg" : ext}`;
+        const selected = getSelected();
+        if (selected) selected.image = `images/${imageName}`;
+      }
+
+      const finalPayload = buildExportPayload();
+
+      // Prefer local admin_server.py (no folder picker)
+      if (location.protocol !== "file:") {
+        try {
+          await saveViaApi(finalPayload, imageFile, imageName);
+          dirty = false;
+          pendingImageFile = null;
+          clearDraft();
+          updateStatus();
+          renderList();
+          renderEditor();
+          toast("저장 완료. 주문 페이지를 새로고침하세요.");
+          return;
+        } catch (err) {
+          console.warn("API save failed", err);
+        }
+      }
+
+      // Fallback: download files (no Select Folder dialog)
+      downloadBlob(
+        "products-data.js",
+        new Blob(["window.PRODUCTS_DATA = " + JSON.stringify(finalPayload) + ";\n"], { type: "text/javascript" })
+      );
+      downloadBlob(
+        "products.json",
+        new Blob([JSON.stringify(finalPayload, null, 2)], { type: "application/json" })
+      );
+      if (imageFile && imageName) {
+        downloadBlob(imageName, imageFile);
+        toast("다운로드됨 → T&D 폴더에 덮어쓰세요. (이미지는 images 폴더로)");
+      } else {
+        toast("다운로드됨 → products-data.js / products.json 을 T&D 폴더에 덮어쓰세요.");
+      }
+      dirty = false;
+      pendingImageFile = null;
+      clearDraft();
+      updateStatus();
+    }
+
+    function refresh() {
+      renderList();
+      renderEditor();
+      updateStatus();
+    }
+
+    els.list.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-id]");
+      if (!btn) return;
+      selectProduct(btn.dataset.id);
+    });
+
+    els.brandFilter.addEventListener("change", renderList);
+    els.search.addEventListener("input", renderList);
+    document.getElementById("btnAdd").addEventListener("click", addItem);
+    document.getElementById("btnSave").addEventListener("click", () => { saveAll(); });
+    document.getElementById("btnReload").addEventListener("click", () => {
+      if (dirty && !confirm("저장하지 않은 변경이 있습니다. 다시 불러올까요?")) return;
+      loadFromEmbedded(true);
+      selectedId = null;
+      pendingImageFile = null;
+      refresh();
+      toast("원본 데이터를 다시 불러왔습니다.");
+    });
+
+    els.imageInput.addEventListener("change", () => {
+      const file = els.imageInput.files && els.imageInput.files[0];
+      els.imageInput.value = "";
+      if (!file || !getSelected()) return;
+      pendingImageFile = file;
+      const url = URL.createObjectURL(file);
+      const preview = document.getElementById("previewImg");
+      if (preview) preview.src = url;
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const name = `${slugify(getSelected().id)}.${ext === "jpeg" ? "jpg" : ext}`;
+      document.getElementById("fImage").value = `images/${name}`;
+      markDirty(true);
+      toast("이미지 선택됨. 저장 시 함께 저장됩니다.");
+    });
+
+    window.addEventListener("beforeunload", (e) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    });
+
+    function boot() {
+      try {
+        loadFromEmbedded(false);
+        refresh();
+      } catch (err) {
+        console.error(err);
+        els.statusLine.innerHTML = `<span style="color:var(--warn);font-weight:700">Load failed</span>`;
+        els.list.innerHTML = `<div class="empty">products-data.js를 불러오지 못했습니다.<br/>${escapeHtml(err.message || err)}</div>`;
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>

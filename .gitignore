@@ -1,0 +1,9 @@
+# Large source PDF (not needed for the live order site)
+TDANDMORE.pdf
+
+# Local/temp
+_images_restore/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>T&amp;D Order</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --ink: #1c1a17;
+      --muted: #6b655c;
+      --line: #ddd4c6;
+      --accent: #2f5d4a;
+      --accent-hover: #254a3b;
+      --warn: #a33b2b;
+      --shadow: 0 10px 30px rgba(40, 30, 15, 0.08);
+      --panel: #fffdf9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #efe4d2 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #e4ebe4 0%, transparent 50%),
+        var(--bg);
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 16px 100px; }
+    header { margin-bottom: 18px; }
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Syne", "Segoe UI", sans-serif;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f7f2ea;
+    }
+    .panel-head h2 { margin: 0; font-size: 1rem; }
+    .filters { padding: 14px 16px 0; display: grid; gap: 10px; }
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 720px) {
+      .filter-row { grid-template-columns: 220px 1fr; }
+    }
+    .note { margin: 0; color: var(--muted); font-size: 0.84rem; line-height: 1.4; }
+    .status-line {
+      padding: 0 16px 10px;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+    .status-line .ok { color: var(--accent); font-weight: 600; }
+
+    label.field {
+      display: grid;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input[type="search"], input[type="number"], input[type="text"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 36px;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      outline-offset: 1px;
+    }
+
+    .catalog {
+      padding: 14px 16px 18px;
+      display: grid;
+      gap: 16px;
+    }
+    .empty-hint {
+      color: var(--muted);
+      text-align: center;
+      padding: 36px 12px;
+      line-height: 1.5;
+    }
+    .brand-section { display: grid; gap: 10px; }
+    .brand-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 2px;
+    }
+    .brand-head strong { font-size: 0.95rem; }
+    .brand-head span { color: var(--muted); font-size: 0.8rem; }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (min-width: 560px) {
+      .photo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (min-width: 860px) {
+      .photo-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    }
+    @media (min-width: 1100px) {
+      .photo-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+
+    .product-card {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 0;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      display: grid;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .product-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      box-shadow: 0 8px 22px rgba(40, 30, 15, 0.1);
+      transform: translateY(-2px);
+    }
+    .product-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .product-card.in-cart {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+    .product-card .shot {
+      aspect-ratio: 3 / 4;
+      width: 100%;
+      object-fit: cover;
+      background: #f0ece4;
+      display: block;
+    }
+    .product-card .meta {
+      padding: 9px 10px 11px;
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .product-card .name {
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .product-card . bid {
+      font-size: 0.74rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      align-items: baseline;
+    }
+    .product-card .price { font-weight: 700; color: var(--ink); }
+    .product-card .cart-qty {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #e7efe9;
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    .product-card.out-of-stock {
+      border-color: color-mix(in srgb, var(--warn) 35%, var(--line));
+    }
+    .product-card .shot-wrap {
+      position: relative;
+      display: block;
+    }
+    .product-card .oos-badge {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(163, 59, 43, 0.92);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+    }
+    .product-card.out-of-stock .shot { filter: grayscale(0.35); opacity: 0.88; }
+    .product-sheet-oos {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #fce6e2;
+      color: var(--warn);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      width: fit-content;
+    }
+    .cart-item-name .oos-inline {
+      display: inline-block;
+      margin-left: 6px;
+      color: var(--warn);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .btn-primary, .btn-secondary, .btn-clear-cart, .btn-sm {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #f7faf8; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: #efe8dc; color: var(--ink); }
+    .btn-secondary:hover { background: #e6ddd0; }
+    .btn-sm { padding: 8px 12px; font-size: 0.82rem; }
+    .btns { display: grid; gap: 8px; }
+    .btns .full { grid-column: 1 / -1; }
+    @media (min-width: 480px) {
+      .btns { grid-template-columns: 1fr 1fr; }
+      .btns .full { grid-column: 1 / -1; }
+    }
+
+    .summary {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fffdf9;
+      min-height: 120px;
+      max-height: min(50vh, 420px);
+      overflow: auto;
+    }
+    .summary.empty {
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      min-height: 120px;
+    }
+    .cart-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .cart-item:last-child { border-bottom: none; padding-bottom: 4px; }
+    .cart-item-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 700;
+      font-size: 0.86rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .cart-qty-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      background: #dff2eb;
+      font: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .cart-qty-btn:hover { background: #cfeae0; }
+    .cart-qty-val {
+      min-width: 28px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+    .cart-del-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      background: #fce6e2;
+      color: var(--warn);
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .cart-del-btn:hover { background: #f6d6d0; }
+    .btn-clear-cart {
+      background: #fce6e2;
+      color: var(--warn);
+      border: none;
+    }
+    .btn-clear-cart:hover:not(:disabled) { background: #f6d6d0; }
+
+    .cart-fab {
+      position: fixed;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      z-index: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 18px;
+      background: var(--accent);
+      color: #f7faf8;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 10px 28px rgba(47, 93, 74, 0.35);
+    }
+    .cart-fab:hover { background: var(--accent-hover); }
+    .cart-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+    .cart-badge[hidden] { display: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%) translateY(20px);
+      background: #1c1a17;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s ease;
+      z-index: 1100;
+      max-width: min(92vw, 420px);
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 16, 10, 0.45);
+      display: none;
+      place-items: end center;
+      z-index: 950;
+      padding: 16px;
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+    .sheet-backdrop.open { display: grid; }
+    #shareSheet { z-index: 960; }
+    #productSheet { z-index: 970; }
+
+    .sheet {
+      width: min(560px, 100%);
+      max-width: 100%;
+      margin: 0 auto;
+      background: #fffdf9;
+      border-radius: 16px 16px 12px 12px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      max-height: min(88vh, 720px);
+      overflow: auto;
+    }
+    #cartSheet .sheet {
+      background: #fff;
+      border-radius: 20px;
+      gap: 14px;
+      padding: 18px;
+    }
+    #cartSheet .summary {
+      background: #fff;
+      border: 1.5px dashed #d9d0c4;
+      padding: 6px 12px;
+    }
+    #cartSheet .summary.empty {
+      min-height: 100px;
+    }
+    #cartSheet .cart-store-field { margin: 0; }
+    #cartSheet .cart-store-field input {
+      margin-top: 6px;
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    #cartSheet .btns .btn-primary,
+    #cartSheet .btns .btn-secondary,
+    #cartSheet .btns .btn-clear-cart {
+      min-height: 46px;
+    }
+
+    .cart-sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .cart-sheet-head h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .product-sheet-body { display: grid; gap: 12px; min-width: 0; }
+    .product-sheet-main {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      min-width: 0;
+    }
+    .product-sheet-thumb {
+      width: 88px;
+      height: 118px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f0ece4;
+      flex-shrink: 0;
+    }
+    .product-sheet-info { min-width: 0; flex: 1; display: grid; gap: 6px; }
+    .product-sheet-name {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .product-sheet-meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .product-sheet-qty {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      width: 100%;
+    }
+    .product-sheet-qty label {
+      flex: 0 0 auto;
+      margin: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .product-sheet-qty input,
+    .product-sheet-qty input[type="number"] {
+      flex: 0 0 auto;
+      width: 33%;
+      max-width: 7.5rem;
+      min-width: 4.5rem;
+      font-size: 16px;
+    }
+
+    #shareText {
+      min-height: 180px;
+      resize: vertical;
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .filters, .cart-fab, .sheet-backdrop, .toast, header .sub { display: none !important; }
+      .wrap { padding: 0; max-width: none; }
+      .panel { box-shadow: none; border: none; }
+      .catalog { padding: 0; }
+      .photo-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Order catalog</div>
+      <h1>T&amp;D and more</h1>
+      <p class="sub">사진을 눌러 수량을 입력한 뒤 Cart에 담으세요. 저장·공유·인쇄는 Cart에서 할 수 있습니다.</p>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Catalog</h2>
+        <a href="admin.html" style="font-size:0.82rem;font-weight:700;color:var(--accent);text-decoration:none;">Admin</a>
+      </div>
+      <div class="filters">
+        <div class="filter-row">
+          <label class="field">Brand
+            <select id="brandSelect"></select>
+          </label>
+          <label class="field">Search
+            <input type="search" id="search" placeholder="상품명, 코드, 브랜드…" autocomplete="off" />
+          </label>
+        </div>
+        <p class="note">브랜드를 고르거나 검색한 뒤, 사진을 클릭하면 장바구니에 담을 수 있습니다.</p>
+      </div>
+      <div class="status-line" id="statusLine">Loading…</div>
+      <div class="catalog" id="catalog">
+        <div class="empty-hint">카탈로그 불러오는 중…</div>
+      </div>
+    </section>
+  </div>
+
+  <button type="button" class="cart-fab" id="cartFab" aria-label="Open cart">
+    Cart
+    <span class="cart-badge" id="cartBadge" hidden>0</span>
+  </button>
+
+  <div class="sheet-backdrop" id="cartSheet" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-labelledby="cartTitle">
+      <div class="cart-sheet-head">
+        <h3 id="cartTitle">Cart</h3>
+        <button type="button" class="btn-secondary btn-sm" id="btnCloseCart">Close</button>
+      </div>
+      <label class="field cart-store-field">Store Name
+        <input type="text" id="orderNote" placeholder="Store name" autocomplete="organization" />
+      </label>
+      <div id="cartList" class="summary empty">Cart is empty.</div>
+      <div class="btns">
+        <button type="button" class="btn-primary" id="btnSave">Save / Share</button>
+        <button type="button" class="btn-secondary" id="btnPrint">Print</button>
+        <button type="button" class="btn-clear-cart full" id="btnClearQty">Clear Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="productSheet" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-labelledby="productSheetTitle">
+      <div class="cart-sheet-head">
+        <h3 id="productSheetTitle">Product</h3>
+        <button type="button" class="btn-secondary btn-sm" id="btnCloseProduct">Close</button>
+      </div>
+      <div class="product-sheet-body" id="productSheetBody"></div>
+      <div class="product-sheet-qty">
+        <label for="productQty">Enter Qty</label>
+        <input type="number" id="productQty" min="1" step="1" inputmode="numeric" placeholder="" />
+      </div>
+      <div class="btns">
+        <button type="button" class="btn-primary" id="btnAddProduct">Add to Cart</button>
+        <button type="button" class="btn-secondary" id="btnCloseProduct2">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-backdrop" id="shareSheet" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-labelledby="shareTitle">
+      <h3 id="shareTitle">Send order via KakaoTalk or SMS</h3>
+      <p class="note">Long-press the text below to copy, or use the buttons.</p>
+      <textarea id="shareText" readonly></textarea>
+      <div class="btns">
+        <button type="button" class="btn-primary" id="btnCopyText">Copy Text</button>
+        <button type="button" class="btn-secondary" id="btnShareNative">Share</button>
+        <button type="button" class="btn-secondary" id="btnSms">Send SMS</button>
+        <button type="button" class="btn-secondary full" id="btnCloseSheet">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="products-data.js"></script>
+  <script>
+    const DRAFT_KEY = "td-order-draft-v1";
+    const RESULT_LIMIT = 120;
+
+    let products = [];
+    let brands = [];
+    const state = { brand: null, qtys: {} };
+    let pendingProduct = null;
+    let toastTimer = null;
+
+    const els = {
+      catalog: document.getElementById("catalog"),
+      brandSelect: document.getElementById("brandSelect"),
+      search: document.getElementById("search"),
+      statusLine: document.getElementById("statusLine"),
+      cartList: document.getElementById("cartList"),
+      cartBadge: document.getElementById("cartBadge"),
+      cartFab: document.getElementById("cartFab"),
+      cartSheet: document.getElementById("cartSheet"),
+      productSheet: document.getElementById("productSheet"),
+      productSheetBody: document.getElementById("productSheetBody"),
+      productQty: document.getElementById("productQty"),
+      orderNote: document.getElementById("orderNote"),
+      shareSheet: document.getElementById("shareSheet"),
+      shareText: document.getElementById("shareText"),
+      toast: document.getElementById("toast"),
+    };
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function money(n) {
+      if (n == null || Number.isNaN(Number(n))) return "—";
+      return "$" + Number(n).toFixed(2);
+    }
+
+    function productKey(p) {
+      return p.id;
+    }
+
+    function toast(msg) {
+      els.toast.textContent = msg;
+      els.toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.remove("show"), 1800);
+    }
+
+    function byId(id) {
+      return products.find((p) => p.id === id) || null;
+    }
+
+    function scoreProduct(p, query) {
+      const q = query.trim().toLowerCase();
+      if (!q) return 0;
+      const name = String(p.name || "").toLowerCase();
+      const brand = String(p.brand || "").toLowerCase();
+      const code = String(p.code || "").toLowerCase();
+      if (code && code === q) return 100;
+      if (code && code.includes(q)) return 90;
+      if (brand === q) return 85;
+      if (name.startsWith(q)) return 80;
+      if (name.includes(q) || brand.includes(q)) return 60;
+      const words = q.split(/\s+/).filter((w) => w.length >= 2);
+      if (words.length && words.every((w) => name.includes(w) || code.includes(w) || brand.includes(w))) {
+        return 40;
+      }
+      return 0;
+    }
+
+    function searchProducts(query) {
+      const hits = [];
+      for (const p of products) {
+        const score = scoreProduct(p, query);
+        if (score <= 0) continue;
+        hits.push({ score, ...p });
+      }
+      hits.sort((a, b) => b.score - a.score || a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+      return hits.slice(0, RESULT_LIMIT);
+    }
+
+    function openProductSheet(product) {
+      if (!product) return;
+      pendingProduct = product;
+      const key = productKey(product);
+      const inCart = Number(state.qtys[key]) || 0;
+      const bits = [];
+      if (product.code) bits.push(`Code: ${escapeHtml(product.code)}`);
+      if (product.size) bits.push(`Size: ${escapeHtml(product.size)}`);
+      bits.push(`Price: ${escapeHtml(money(product.price))}`);
+      if (inCart) bits.push(`In cart: ${inCart}`);
+      els.productSheetBody.innerHTML = `
+        <div class="product-sheet-main">
+          <img class="product-sheet-thumb" src="${escapeHtml(product.image)}" alt="" />
+          <div class="product-sheet-info">
+            <p class="product-sheet-name">${escapeHtml(product.name)}</p>
+            ${product.outOfStock ? `<p class="product-sheet-oos">OUT OF STOCK</p>` : ""}
+            <p class="product-sheet-meta">
+              ${escapeHtml(product.brand)}<br/>
+              ${bits.join("<br/>")}
+            </p>
+          </div>
+        </div>
+      `;
+      els.productQty.value = "";
+      els.productSheet.classList.add("open");
+      els.productSheet.setAttribute("aria-hidden", "false");
+      setTimeout(() => {
+        try { els.productQty.focus(); } catch { /* ignore */ }
+      }, 80);
+    }
+
+    function closeProductSheet() {
+      els.productSheet.classList.remove("open");
+      els.productSheet.setAttribute("aria-hidden", "true");
+      pendingProduct = null;
+      els.productQty.value = "";
+    }
+
+    function addPendingProductToCart() {
+      if (!pendingProduct) return;
+      const qty = Math.floor(Number(els.productQty.value) || 0);
+      if (qty <= 0) {
+        toast("Enter quantity first.");
+        els.productQty.focus();
+        return;
+      }
+      const key = productKey(pendingProduct);
+      state.qtys[key] = (Number(state.qtys[key]) || 0) + qty;
+      const name = pendingProduct.name;
+      closeProductSheet();
+      refresh();
+      toast(`+${qty} · ${name}`);
+    }
+
+    function renderBrandSelect() {
+      const current = state.brand || "";
+      els.brandSelect.innerHTML = [
+        `<option value="">Select brand… (${brands.length})</option>`,
+        ...brands.map((b) => {
+          const count = products.filter((p) => p.brand === b).length;
+          return `<option value="${escapeHtml(b)}" ${b === current ? "selected" : ""}>${escapeHtml(b)} (${count})</option>`;
+        })
+      ].join("");
+    }
+
+    function renderCard(p) {
+      const qty = Number(state.qtys[productKey(p)]) || 0;
+      const oos = !!p.outOfStock;
+      return `
+        <button type="button" class="product-card${qty ? " in-cart" : ""}${oos ? " out-of-stock" : ""}" data-id="${escapeHtml(p.id)}">
+          <span class="shot-wrap">
+            <img class="shot" src="${escapeHtml(p.image)}" alt="" loading="lazy" />
+            ${oos ? `<span class="oos-badge">OUT OF STOCK</span>` : ""}
+          </span>
+          <div class="meta">
+            <div class="name">${escapeHtml(p.name)}</div>
+            <div class="bits">
+              <span class="price">${escapeHtml(money(p.price))}</span>
+              ${qty ? `<span class="cart-qty">${qty}</span>` : (p.code ? `<span>${escapeHtml(p.code)}</span>` : `<span></span>`)}
+            </div>
+          </div>
+        </button>
+      `;
+    }
+
+    function renderBrandBlock(brand, list) {
+      return `
+        <section class="brand-section">
+          <div class="brand-head">
+            <strong>${escapeHtml(brand)}</strong>
+            <span>${list.length} items</span>
+          </div>
+          <div class="photo-grid">${list.map(renderCard).join("")}</div>
+        </section>
+      `;
+    }
+
+    function renderCatalog() {
+      if (!products.length) {
+        els.catalog.innerHTML = `<div class="empty-hint">No products loaded.</div>`;
+        return;
+      }
+
+      const query = els.search.value.trim();
+      if (query) {
+        const hits = searchProducts(query);
+        if (!hits.length) {
+          els.catalog.innerHTML = `<div class="empty-hint">No products match "${escapeHtml(query)}".</div>`;
+          return;
+        }
+        const byBrand = new Map();
+        for (const hit of hits) {
+          if (!byBrand.has(hit.brand)) byBrand.set(hit.brand, []);
+          byBrand.get(hit.brand).push(hit);
+        }
+        els.catalog.innerHTML = `
+          <div class="note">${hits.length} matches · ${byBrand.size} brands</div>
+          ${[...byBrand.entries()].map(([brand, list]) => renderBrandBlock(brand, list)).join("")}
+        `;
+        return;
+      }
+
+      if (!state.brand) {
+        els.catalog.innerHTML = `<div class="empty-hint">브랜드를 선택하거나 위에서 검색하세요.<br/>Catalog: ${products.length} items · ${brands.length} brands</div>`;
+        return;
+      }
+
+      const list = products.filter((p) => p.brand === state.brand);
+      els.catalog.innerHTML = renderBrandBlock(state.brand, list);
+    }
+
+    function getItems() {
+      const items = [];
+      for (const [k, qty] of Object.entries(state.qtys)) {
+        if (!qty || qty <= 0) continue;
+        const p = byId(k);
+        if (!p) continue;
+        items.push({ ...p, qty, key: k });
+      }
+      return items;
+    }
+
+    function setCartQty(key, qty) {
+      const next = Math.max(0, Math.floor(Number(qty) || 0));
+      if (next > 0) state.qtys[key] = next;
+      else delete state.qtys[key];
+      refresh();
+    }
+
+    function adjustCartQty(key, delta) {
+      const cur = Number(state.qtys[key]) || 0;
+      setCartQty(key, cur + delta);
+    }
+
+    function removeCartItem(key) {
+      delete state.qtys[key];
+      refresh();
+    }
+
+    function updateCartBadge() {
+      const total = getItems().reduce((s, i) => s + i.qty, 0);
+      if (total > 0) {
+        els.cartBadge.hidden = false;
+        els.cartBadge.textContent = String(total);
+      } else {
+        els.cartBadge.hidden = true;
+        els.cartBadge.textContent = "0";
+      }
+    }
+
+    function updateCart() {
+      updateCartBadge();
+      const items = getItems();
+      if (!items.length) {
+        els.cartList.className = "summary empty";
+        els.cartList.textContent = "Cart is empty.";
+        return;
+      }
+      els.cartList.className = "summary";
+      els.cartList.innerHTML = `
+        <ul class="cart-list">
+          ${items.map((i) => `
+            <li class="cart-item" data-key="${escapeHtml(i.key)}">
+              <div class="cart-item-name">${escapeHtml(i.name)}${i.outOfStock ? `<span class="oos-inline">OUT OF STOCK</span>` : ""}</div>
+              <div class="cart-item-controls">
+                <button type="button" class="cart-qty-btn" data-act="minus" aria-label="Decrease">−</button>
+                <span class="cart-qty-val">${i.qty}</span>
+                <button type="button" class="cart-qty-btn" data-act="plus" aria-label="Increase">+</button>
+                <button type="button" class="cart-del-btn" data-act="del" aria-label="Remove">×</button>
+              </div>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    }
+
+    function openCart() {
+      updateCart();
+      els.cartSheet.classList.add("open");
+      els.cartSheet.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCart() {
+      els.cartSheet.classList.remove("open");
+      els.cartSheet.setAttribute("aria-hidden", "true");
+    }
+
+    function orderText() {
+      const items = getItems();
+      const groups = new Map();
+      for (const item of items) {
+        if (!groups.has(item.brand)) groups.set(item.brand, []);
+        groups.get(item.brand).push(item);
+      }
+      const lines = [];
+      const storeName = els.orderNote.value.trim();
+      if (storeName) {
+        lines.push(`Store Name: ${storeName}`);
+        lines.push("");
+      }
+      for (const [brand, list] of groups.entries()) {
+        lines.push(brand);
+        list.forEach((i) => lines.push(`${i.name} - ${i.qty}`));
+        lines.push("");
+      }
+      const totalQty = items.reduce((s, i) => s + i.qty, 0);
+      lines.push(`Total: ${totalQty} pcs`);
+      return lines.join("\n");
+    }
+
+    async function copyText(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch { /* fall through */ }
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+
+    function openShareSheet(text) {
+      els.shareText.value = text;
+      els.shareSheet.classList.add("open");
+      els.shareSheet.setAttribute("aria-hidden", "false");
+      setTimeout(() => {
+        els.shareText.focus();
+        els.shareText.select();
+      }, 50);
+    }
+
+    function closeShareSheet() {
+      els.shareSheet.classList.remove("open");
+      els.shareSheet.setAttribute("aria-hidden", "true");
+    }
+
+    function smsHref(text) {
+      const body = encodeURIComponent(text);
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent || "")) return `sms:&body=${body}`;
+      return `sms:?body=${body}`;
+    }
+
+    async function shareNative(text) {
+      if (!navigator.share) return false;
+      try {
+        await navigator.share({ text });
+        return true;
+      } catch (err) {
+        if (err && err.name === "AbortError") return true;
+        return false;
+      }
+    }
+
+    function saveDraft() {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        note: els.orderNote.value,
+        brand: state.brand,
+        qtys: state.qtys,
+        search: els.search.value
+      }));
+    }
+
+    function loadDraft() {
+      try {
+        const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+        if (!draft) return;
+        els.orderNote.value = draft.note || "";
+        els.search.value = draft.search || "";
+        if (draft.brand) state.brand = draft.brand;
+        if (draft.qtys && typeof draft.qtys === "object") state.qtys = draft.qtys;
+      } catch { /* ignore */ }
+    }
+
+    function refresh() {
+      renderBrandSelect();
+      renderCatalog();
+      updateCart();
+      saveDraft();
+    }
+
+    els.catalog.addEventListener("click", (e) => {
+      const card = e.target.closest(".product-card");
+      if (!card) return;
+      const product = byId(card.dataset.id);
+      openProductSheet(product);
+    });
+
+    els.brandSelect.addEventListener("change", () => {
+      state.brand = els.brandSelect.value || null;
+      if (state.brand) els.search.value = "";
+      refresh();
+    });
+
+    els.search.addEventListener("input", () => {
+      if (els.search.value.trim()) state.brand = null;
+      refresh();
+    });
+
+    els.cartFab.addEventListener("click", openCart);
+    document.getElementById("btnCloseCart").addEventListener("click", closeCart);
+    els.cartSheet.addEventListener("click", (e) => {
+      if (e.target === els.cartSheet) closeCart();
+    });
+    els.cartList.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      const row = btn.closest("[data-key]");
+      if (!row) return;
+      const key = row.dataset.key;
+      const act = btn.dataset.act;
+      if (act === "plus") adjustCartQty(key, 1);
+      else if (act === "minus") adjustCartQty(key, -1);
+      else if (act === "del") removeCartItem(key);
+    });
+
+    document.getElementById("btnCloseProduct").addEventListener("click", closeProductSheet);
+    document.getElementById("btnCloseProduct2").addEventListener("click", closeProductSheet);
+    els.productSheet.addEventListener("click", (e) => {
+      if (e.target === els.productSheet) closeProductSheet();
+    });
+    document.getElementById("btnAddProduct").addEventListener("click", addPendingProductToCart);
+    els.productQty.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addPendingProductToCart();
+      }
+    });
+
+    els.orderNote.addEventListener("input", saveDraft);
+
+    document.getElementById("btnClearQty").addEventListener("click", () => {
+      state.qtys = {};
+      refresh();
+      toast("Cart cleared.");
+    });
+
+    document.getElementById("btnSave").addEventListener("click", async () => {
+      const items = getItems();
+      if (!items.length) return toast("Cart is empty.");
+      const text = orderText();
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+      if (isMobile && navigator.share) {
+        const shared = await shareNative(text);
+        if (shared) {
+          toast("Share sheet opened.");
+          return;
+        }
+      }
+      openShareSheet(text);
+      const ok = await copyText(text);
+      toast(ok ? "Order copied." : "Long-press the text to copy.");
+    });
+
+    document.getElementById("btnCopyText").addEventListener("click", async () => {
+      const ok = await copyText(els.shareText.value);
+      toast(ok ? "Copied." : "Copy failed. Long-press the text.");
+    });
+    document.getElementById("btnShareNative").addEventListener("click", async () => {
+      const ok = await shareNative(els.shareText.value);
+      if (!ok) toast("Share not available on this device.");
+    });
+    document.getElementById("btnSms").addEventListener("click", () => {
+      window.location.href = smsHref(els.shareText.value);
+    });
+    document.getElementById("btnCloseSheet").addEventListener("click", closeShareSheet);
+    els.shareSheet.addEventListener("click", (e) => {
+      if (e.target === els.shareSheet) closeShareSheet();
+    });
+    document.getElementById("btnPrint").addEventListener("click", () => window.print());
+
+    function boot() {
+      loadDraft();
+      try {
+        const data = window.PRODUCTS_DATA;
+        if (!data || !Array.isArray(data.products) || !data.products.length) {
+          throw new Error("products-data.js is missing or empty");
+        }
+        products = data.products;
+        brands = Array.isArray(data.brands) && data.brands.length
+          ? data.brands
+          : [...new Set(products.map((p) => p.brand))].sort();
+        if (state.brand && !brands.includes(state.brand)) state.brand = null;
+        els.statusLine.innerHTML = `<span class="ok">Ready</span> · ${products.length} products · ${brands.length} brands`;
+        refresh();
+      } catch (err) {
+        console.error(err);
+        els.statusLine.innerHTML = `<span style="color:var(--warn);font-weight:600">Load failed</span>`;
+        els.catalog.innerHTML = `<div class="empty-hint">상품 데이터를 불러오지 못했습니다.<br/>같은 폴더의 products-data.js가 있는지 확인해 주세요.<br/>${escapeHtml(err.message || err)}</div>`;
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
