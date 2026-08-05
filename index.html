@@ -1147,7 +1147,13 @@
           totalAmount += lineTotal;
           totalQty += i.qty;
           const priceLabel = Number.isFinite(unit) ? money(unit) : "—";
-          lines.push(`${i.name} - ${priceLabel} x ${i.qty} (pcs)`);
+          const size = String(i.size || "").trim();
+          const nameNorm = String(i.name || "").toLowerCase().replace(/\s+/g, "");
+          const sizeNorm = size.toLowerCase().replace(/\s+/g, "");
+          const sizePart = size && (!sizeNorm || !nameNorm.includes(sizeNorm))
+            ? ` (${size})`
+            : "";
+          lines.push(`${i.name}${sizePart} - ${priceLabel} x ${i.qty} (pcs)`);
         });
         lines.push("");
       }
@@ -1491,9 +1497,9 @@
 
     function applyCatalogData(data) {
       products = Array.isArray(data.products) ? data.products : [];
-      brands = Array.isArray(data.brands) && data.brands.length
-        ? data.brands
-        : [...new Set(products.map((p) => p.brand))].sort();
+      // Always rebuild from products so newly added brands appear in the menu
+      brands = [...new Set(products.map((p) => String(p.brand || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
       if (state.brand && !brands.includes(state.brand)) state.brand = null;
       els.statusLine.innerHTML = `<span class="ok">Ready</span> · ${products.length} products · ${brands.length} brands`;
       refresh();
@@ -1526,9 +1532,16 @@
     // Same browser, returning from admin with focus
     window.addEventListener("focus", () => {
       const live = loadLiveCatalog();
-      if (!live) return;
-      const same = products.length === live.products.length &&
-        products.every((p, i) => p.id === live.products[i].id && !!p.outOfStock === !!live.products[i].outOfStock);
+      if (!live || !Array.isArray(live.products)) return;
+      const liveBrands = [...new Set(live.products.map((p) => String(p.brand || "").trim()).filter(Boolean))];
+      const same =
+        products.length === live.products.length &&
+        brands.length === liveBrands.length &&
+        liveBrands.every((b) => brands.includes(b)) &&
+        products.every((p, i) => {
+          const q = live.products[i];
+          return q && p.id === q.id && p.brand === q.brand && p.name === q.name && !!p.outOfStock === !!q.outOfStock;
+        });
       if (same) return;
       applyCatalogData(live);
     });
