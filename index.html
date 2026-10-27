@@ -1139,25 +1139,27 @@
       }
       let totalAmount = 0;
       let totalQty = 0;
+      let brandIndex = 0;
       for (const [brand, list] of groups.entries()) {
-        lines.push(brand);
+        if (brandIndex > 0) lines.push("--------------------");
+        lines.push(`【 ${brand} 】`);
         list.forEach((i) => {
           const unit = Number(i.price);
           const lineTotal = (Number.isFinite(unit) ? unit : 0) * i.qty;
           totalAmount += lineTotal;
           totalQty += i.qty;
-          const priceLabel = Number.isFinite(unit) ? money(unit) : "—";
           const size = String(i.size || "").trim();
           const nameNorm = String(i.name || "").toLowerCase().replace(/\s+/g, "");
           const sizeNorm = size.toLowerCase().replace(/\s+/g, "");
           const sizePart = size && (!sizeNorm || !nameNorm.includes(sizeNorm))
             ? ` (${size})`
             : "";
-          lines.push(`${i.name}${sizePart} - ${priceLabel} x ${i.qty} (pcs)`);
+          lines.push(`- ${i.name}${sizePart} x【${i.qty}】pcs`);
         });
-        lines.push("");
+        brandIndex += 1;
       }
-      lines.push(`Total: ${money(totalAmount)} (${totalQty} pcs)`);
+      lines.push("--------------------");
+      lines.push(`Total: ${money(totalAmount)} / 【${totalQty}】pcs`);
       return lines.join("\n");
     }
 
