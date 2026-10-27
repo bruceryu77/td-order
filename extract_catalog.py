@@ -3,29 +3,47 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
 from collections import defaultdict
 from pathlib import Path
 
 import fitz
 
-PDF = Path(r"C:\Users\amorb\OneDrive\Desktop\PROJECT\ORDER\T&D\TDANDMORE.pdf")
+PDF = Path(r"C:\Users\amorb\Downloads\TDMORE.pdf")
 OUT = Path(r"C:\Users\amorb\OneDrive\Desktop\PROJECT\ORDER\T&D")
 IMG_DIR = OUT / "images"
 ZOOM = 2.0  # render scale for crisp crops
 
-PRICE_RE = re.compile(r"^\$?\d+(?:\.\d{2})?$")
+# Dollar amount or a decimal price. Bare integers are product codes (70, 121, 150).
+PRICE_RE = re.compile(r"^(?:\$\d+(?:\.\d{1,2})?|\d+\.\d{2})$")
 SIZE_RE = re.compile(
     r"(?i)^(?:\d+(?:\.\d+)?\s*(?:oz|fl\s*oz|ml|g|ct|pk|pack|pcs?).*"
     r"|\d+\s*x\s*\d+.*|call for special price)$"
 )
-CODE_RE = re.compile(r"^(?:[A-Z]-?\d{1,4}|\d{1,4}(?:-\d{1,2})?)$", re.I)
+# B-1, NU-11, NU-11R, NU-BR2, H1, 70, 70-4, 197-11
+CODE_RE = re.compile(
+    r"^(?:[A-Z]{1,4}(?:-[A-Z0-9]{1,5})+|[A-Z]\d{1,4}|\d{1,4}(?:-\d{1,2})?)$",
+    re.I,
+)
 PAGE_NUM_RE = re.compile(r"^\d{1,2}$")
 SKIP_WORDS = {
     "PRODUCT CATALOG",
     "NATURAL & DAILY ESSENTIALS",
     "CALL FOR SPECIAL PRICE",
-    "OTHERS",
+    "OUT",
+    "OF",
+    "STOCK",
+    "OUT OF",
+    "OUT OF STOCK",
+}
+BRAND_MAP = {
+    "COLOR SILK": "COLORSILK",
+    "TRESEMME": "TRESEMME",
+    "TRESemme": "TRESEMME",
+    "ALIVER OIL": "ALIVER",
+    "DOVE MEN+": "DOVE",
+    "LADY SPEEDY STICK": "LADY SPEED STICK",
+    "HEAD & SHOULDER": "HEAD & SHOULDERS",
+    "VEET GOLD & VSC": "VEET GOLD",
 }
 
 
@@ -134,9 +152,9 @@ def classify_line(text: str):
         return "price"
     if SIZE_RE.match(t):
         return "size"
-    if CODE_RE.match(t) and not re.search(r"[A-Za-z]{3,}", t):
+    if CODE_RE.match(t):
         return "code"
-    if PAGE_NUM_RE.match(t) and int(t) <= 66:
+    if PAGE_NUM_RE.match(t) and int(t) <= 80:
         return "page"
     return "name"
 
@@ -146,7 +164,19 @@ def parse_price(text: str):
     return float(m.group(1)) if m else None
 
 
-def associate_meta(img_bbox, text_items):
+def is_out_of_stock(img_bbox, text_items):
+    ix0, iy0, ix1, iy1 = img_bbox
+    for t in text_items:
+        if t["text"].strip().upper() != "STOCK":
+            continue
+        tx0, ty0, tx1, ty1 = t["bbox"]
+        tcx, tcy = center(t["bbox"])
+        if ix0 - 20 <= tcx <= ix1 + 20 and iy0 - 8 <= tcy <= iy1 + 18:
+            return True
+    return False
+
+
+def associate_meta(img_bbox, text_items, page_h):
     ix0, iy0, ix1, iy1 = img_bbox
     icx, icy = center(img_bbox)
     iw = ix1 - ix0
@@ -155,6 +185,8 @@ def associate_meta(img_bbox, text_items):
 
     for t in text_items:
         tx0, ty0, tx1, ty1 = t["bbox"]
+        if ty0 > page_h - 48:
+            continue
         tcx, tcy = center(t["bbox"])
         kind = classify_line(t["text"])
         if kind in ("skip", "page"):
@@ -214,14 +246,38 @@ def crop_image(page, bbox, out_path: Path):
     pix.save(str(out_path))
 
 
+def _norm_code(code: str) -> str:
+    return (code or "").strip().upper()
+
+
+def _load_old_products():
+    path = OUT / "products.json"
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data.get("products") or []
+
+
+def _alloc_id(page, idx, used):
+    base = f"p{page:02d}-{idx:02d}"
+    if base not in used:
+        return base
+    n = 2
+    while f"{base}-{n}" in used:
+        n += 1
+    return f"{base}-{n}"
+
+
 def main():
-    if IMG_DIR.exists():
-        shutil.rmtree(IMG_DIR)
-    IMG_DIR.mkdir(parents=True)
+    old_products = _load_old_products()
+    by_code = defaultdict(list)
+    for p in old_products:
+        code = _norm_code(p.get("code"))
+        if code:
+            by_code[code].append(p)
 
     doc = fitz.open(PDF)
-    products = []
-    brand_pages = defaultdict(list)
+    drafts = []
 
     for pi in range(len(doc)):
         page = doc[pi]
@@ -230,6 +286,7 @@ def main():
 
         text_items = collect_text_items(page)
         brand = guess_brand(text_items, pi, page.rect.height)
+        brand = BRAND_MAP.get(brand, brand)
 
         raw_imgs = []
         for b in page.get_text("dict")["blocks"]:
@@ -240,46 +297,112 @@ def main():
                 raw_imgs.append(bbox)
 
         imgs = dedupe_images(raw_imgs)
-        page_products = []
+        page_count = 0
 
         for idx, bbox in enumerate(imgs):
-            name, code, size, price = associate_meta(bbox, text_items)
+            name, code, size, price = associate_meta(bbox, text_items, page.rect.height)
             if not name:
-                # last resort: any name-like text under image
                 name = f"{brand} item {idx + 1}"
-
-            # Prefer brand prefix if name doesn't already start with it
-            display = name
-            if brand and brand.upper() not in name.upper() and len(name) < 60:
-                # keep extracted name as-is; brand is separate field
-                pass
-
-            slug = re.sub(r"[^a-zA-Z0-9]+", "-", f"p{pi:02d}-{idx:02d}-{code or name}")[:60].strip("-").lower()
-            fname = f"{slug}.jpg"
-            out_path = IMG_DIR / fname
-            crop_image(page, bbox, out_path)
-
-            product = {
-                "id": f"p{pi:02d}-{idx:02d}",
-                "name": display,
+            name = re.sub(r"\s+", " ", name).strip(" -/")
+            drafts.append({
+                "name": name,
                 "brand": brand,
                 "code": code,
                 "size": size,
                 "price": price,
                 "page": pi,
-                "image": f"images/{fname}",
-            }
-            products.append(product)
-            page_products.append(product)
+                "outOfStock": is_out_of_stock(bbox, text_items),
+                "_bbox": bbox,
+                "_page_index": pi,
+                "_idx": idx,
+            })
+            page_count += 1
 
-        brand_pages[brand].append(pi)
-        print(f"page {pi:02d} [{brand}] -> {len(page_products)} products")
+        print(f"page {pi:02d} [{brand}] -> {page_count} products")
 
-    # cleanup weak names that are only size/code leftovers
+    used_ids = set()
+    matched = []
+    for d in drafts:
+        code = _norm_code(d.get("code"))
+        old = by_code[code].pop(0) if code and by_code.get(code) else None
+        if old and old.get("brand") and d.get("brand"):
+            if old["brand"].strip().upper() != d["brand"].strip().upper():
+                old = None
+        if old:
+            d["id"] = old["id"]
+            d["image"] = old.get("image") or ""
+            used_ids.add(d["id"])
+            matched.append(code)
+        else:
+            d["id"] = ""
+            d["image"] = ""
+
+    IMG_DIR.mkdir(parents=True, exist_ok=True)
+    products = []
+    for d in drafts:
+        if not d["id"]:
+            d["id"] = _alloc_id(d["_page_index"], d["_idx"], used_ids)
+            used_ids.add(d["id"])
+        if not d["image"]:
+            slug = re.sub(
+                r"[^a-zA-Z0-9]+",
+                "-",
+                f'{d["id"]}-{d["code"] or d["name"]}',
+            )[:60].strip("-").lower()
+            d["image"] = f"images/{slug}.jpg"
+        page = doc[d["_page_index"]]
+        crop_image(page, d["_bbox"], IMG_DIR / Path(d["image"]).name)
+        if not d["name"]:
+            d["name"] = f'{d["brand"]} {d["code"] or d["id"]}'.strip()
+        products.append({
+            "id": d["id"],
+            "name": d["name"],
+            "brand": d["brand"],
+            "code": d["code"],
+            "size": d["size"],
+            "price": d["price"],
+            "page": d["page"],
+            "image": d["image"].replace("\\", "/"),
+            "outOfStock": d["outOfStock"],
+        })
+
+    old_by_code = {}
+    for p in old_products:
+        code = _norm_code(p.get("code"))
+        if code and code not in old_by_code:
+            old_by_code[code] = p
+    new_codes = {_norm_code(p["code"]) for p in products if _norm_code(p["code"])}
+    old_codes = set(old_by_code)
+    added = sorted(new_codes - old_codes)
+    removed = sorted(old_codes - new_codes)
+    price_changes = []
     for p in products:
-        p["name"] = re.sub(r"\s+", " ", p["name"]).strip(" -/")
-        if not p["name"]:
-            p["name"] = f'{p["brand"]} {p["code"] or p["id"]}'.strip()
+        code = _norm_code(p["code"])
+        old = old_by_code.get(code)
+        if not old:
+            continue
+        if old.get("price") != p.get("price"):
+            price_changes.append((code, old.get("price"), p.get("price"), p["name"]))
+
+    kept_images = {Path(p["image"]).name for p in products}
+    removed_images = []
+    for p in old_products:
+        image = p.get("image") or ""
+        name = Path(image).name
+        if not name or name in kept_images:
+            continue
+        path = IMG_DIR / name
+        if path.exists():
+            path.unlink()
+            removed_images.append(name)
+
+    missing = [p for p in products if not p["code"] or p["price"] is None]
+    dupes = []
+    seen = defaultdict(int)
+    for p in products:
+        if p["code"]:
+            seen[p["code"].upper()] += 1
+    dupes = sorted(c for c, n in seen.items() if n > 1)
 
     catalog = {
         "title": "T&D and more",
@@ -293,8 +416,37 @@ def main():
         "window.PRODUCTS_DATA = " + json.dumps(catalog, ensure_ascii=False) + ";\n",
         encoding="utf-8",
     )
-    print(f"\nDone: {len(products)} products, {len(catalog['brands'])} brands")
-    print(f"Wrote {OUT / 'products.json'}, {OUT / 'products-data.js'} and {IMG_DIR}")
+
+    report = {
+        "oldCount": len(old_products),
+        "newCount": len(products),
+        "added": [
+            {"code": c, "name": next(p["name"] for p in products if _norm_code(p["code"]) == c),
+             "price": next(p["price"] for p in products if _norm_code(p["code"]) == c),
+             "brand": next(p["brand"] for p in products if _norm_code(p["code"]) == c)}
+            for c in added
+        ],
+        "removed": [
+            {"code": c, "name": old_by_code[c]["name"], "brand": old_by_code[c]["brand"]}
+            for c in removed
+        ],
+        "priceChanges": [
+            {"code": c, "old": a, "new": b, "name": n} for c, a, b, n in price_changes
+        ],
+        "outOfStock": [
+            {"code": p["code"], "name": p["name"]} for p in products if p["outOfStock"]
+        ],
+        "missing": [
+            {"id": p["id"], "code": p["code"], "name": p["name"], "price": p["price"], "page": p["page"]}
+            for p in missing
+        ],
+        "duplicateCodes": dupes,
+        "removedImages": len(removed_images),
+    }
+    (OUT / "_catalog_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\nDone: {len(old_products)} -> {len(products)} products")
+    print(f"added {len(added)} removed {len(removed)} price changes {len(price_changes)}")
+    print(f"out of stock {sum(1 for p in products if p['outOfStock'])} missing meta {len(missing)} dupes {dupes}")
 
 
 if __name__ == "__main__":
